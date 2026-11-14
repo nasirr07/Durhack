@@ -102,6 +102,91 @@ def draw_menu(screen):
 
     return play_button, exit_button
 
+def draw_death_screen(screen):
+    screen.fill((15, 10, 15))
+
+    title_font = pygame.font.Font(None, 110)
+    button_font = pygame.font.Font(None, 45)
+
+    # Game Over title
+    title = title_font.render("GAME OVER, YOU LOSE", True, (220, 50, 50))
+    screen.blit(
+        title,
+        title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3))
+    )
+
+    # Exit button
+    exit_button = pygame.Rect(
+        SCREEN_WIDTH // 2 - 120,
+        SCREEN_HEIGHT // 2 + 80,
+        240,
+        70
+    )
+
+    mouse_pos = pygame.mouse.get_pos()
+
+    exit_colour = (
+        (200, 70, 70)
+        if exit_button.collidepoint(mouse_pos)
+        else (140, 40, 40)
+    )
+
+    pygame.draw.rect(
+        screen,
+        exit_colour,
+        exit_button,
+        border_radius=12
+    )
+
+    exit_text = button_font.render("EXIT", True, WHITE)
+    screen.blit(exit_text, exit_text.get_rect(center=exit_button.center))
+
+    pygame.display.flip()
+
+    return exit_button
+
+def draw_victory_screen(screen):
+    screen.fill((15, 10, 15))
+
+    title_font = pygame.font.Font(None, 110)
+    button_font = pygame.font.Font(None, 45)
+
+    # Game Over title
+    title = title_font.render("GAME OVER, YOU WIN!!", True, (220, 50, 50))
+    screen.blit(
+        title,
+        title.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 3))
+    )
+
+    # Exit button
+    exit_button = pygame.Rect(
+        SCREEN_WIDTH // 2 - 120,
+        SCREEN_HEIGHT // 2 + 80,
+        240,
+        70
+    )
+
+    mouse_pos = pygame.mouse.get_pos()
+
+    exit_colour = (
+        (200, 70, 70)
+        if exit_button.collidepoint(mouse_pos)
+        else (140, 40, 40)
+    )
+
+    pygame.draw.rect(
+        screen,
+        exit_colour,
+        exit_button,
+        border_radius=12
+    )
+
+    exit_text = button_font.render("EXIT", True, WHITE)
+    screen.blit(exit_text, exit_text.get_rect(center=exit_button.center))
+
+    pygame.display.flip()
+
+    return exit_button
 # Data from serial port
 serial_reader = SerialReader()
 serial_reader.Start()
@@ -199,7 +284,7 @@ while menu_running and running:
     clock.tick(60)
 
 
-while running:
+while running and player.health > 0 and boss.health > 0:
     dt = min(clock.tick(60) / 1000, 0.05)
 
     # Events
@@ -271,6 +356,50 @@ while running:
     screen.blit(serial_text, (30, 60))
 
     pygame.display.flip()
+
+# Death screen
+if running and player.health <= 0:
+
+    death_screen_running = True
+
+    while death_screen_running:
+
+        exit_button = draw_death_screen(screen)
+
+        for event in pygame.event.get():
+
+            if event.type == pygame.QUIT:
+                death_screen_running = False
+                running = False
+
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                if exit_button.collidepoint(event.pos):
+                    death_screen_running = False
+                    running = False
+
+        clock.tick(60)
+
+elif running and boss.health <= 0:
+        victory_screen_running = True
+
+        while victory_screen_running:
+
+            exit_button = draw_victory_screen(screen)
+
+            for event in pygame.event.get():
+
+                if event.type == pygame.QUIT:
+                    victory_screen_running = False
+                    running = False
+
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                    if exit_button.collidepoint(event.pos):
+                        victory_screen_running = False
+                        running = False
+
+        clock.tick(60)
 
 serial_reader.Stop()
 pygame.quit()
