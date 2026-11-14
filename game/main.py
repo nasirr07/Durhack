@@ -94,12 +94,9 @@ while running:
         boss,
         SCREEN_WIDTH,
         FLOOR_Y
-    ):
-        knockback_direction = (
-            -1 if player.rect.centerx < boss.rect.centerx else 1
-        )
+    ) and player.boss_collision_started:
         player.take_damage(
-            knockback_direction=knockback_direction
+            knockback_direction=player.boss_collision_direction
         )
 
     # Combat
