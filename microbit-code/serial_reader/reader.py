@@ -1,4 +1,4 @@
-import serial, threading, json
+import serial, threading, json, time
 from serial.tools.list_ports import comports
 
 # this microbit port vid = 3368
@@ -27,7 +27,6 @@ class SerialReader():
                     if not line:
                         continue
                     try:
-                        print(line)
                         line_data = json.loads(line)
                         keys = list(line_data.keys())
                         for k in keys:
@@ -55,5 +54,5 @@ r = SerialReader()
 r.Start()
 
 while True:
-    # print(r.GetSerialData())
-    pass
+    print(r.GetSerialData())
+    time.sleep(0.05)

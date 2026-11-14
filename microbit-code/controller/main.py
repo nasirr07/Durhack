@@ -6,16 +6,13 @@ radio.on()
 
 while True:
     temp = temperature()
-    display.scroll(temp)
-    
     light = display.read_light_level()
-    display.scroll(light)
 
-    direction = ("none")
+    direction = "none"
     if accelerometer.was_gesture('left'):
         direction = "left"
     elif accelerometer.was_gesture('right'):
         direction = "right"
-    display.scroll(direction)
 
     radio.send("temp=%d,light=%d,dir=%s" % (temp, light, direction))
+    sleep(50)
