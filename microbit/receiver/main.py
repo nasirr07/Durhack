@@ -3,7 +3,7 @@ import radio
 import json 
 
 radio.on()
-radio.config(group=1)
+radio.config(channel = 10, group = 200)
 
 while True:
     incoming = radio.receive()
