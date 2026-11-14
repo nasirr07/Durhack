@@ -1,1 +1,1 @@
-ufs put main.py
+python -m microfs put main.py
