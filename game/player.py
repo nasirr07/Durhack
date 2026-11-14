@@ -1,10 +1,14 @@
 
 import pygame
 from collision import resolve_player_collisions
+from animator import Animator
 
 
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x, y, animator=None):
+
+        # Animator
+        self.animator = animator if animator is not None else Animator()
 
         # Health
         self.max_health = 5
@@ -13,9 +17,11 @@ class Player:
         self.damage_cooldown_duration = 0.5
         self.damage_flash_timer = 0.0
         self.knockback_speed = 500.0
+        self.knockback_deceleration = 700.0
         self.bounce_strength = -400.0
         self.knockback_timer = 0.0
         self.knockback_direction = 0
+        self.knockback_velocity_x = 0.0
 
         # Light attack
         self.attack_requested = False
@@ -45,6 +51,8 @@ class Player:
         self.gravity = 1300.0
         self.jump_strength = -650.0
         self.move_speed = 350.0
+        self.max_jumps = 2
+        self.jumps_remaining = 0
 
         # Dash settings
         self.dash_speed = 900.0
@@ -63,6 +71,9 @@ class Player:
         self.grounded = False
         self.coyote_time = 0.0
         self.jump_buffer = 0.0
+        self.boss_collision_direction = 0
+        self.boss_collision_started = False
+        self.boss_contact_active = False
 
         self.coyote_duration = 0.12
         self.jump_buffer_duration = 0.12
@@ -101,6 +112,11 @@ class Player:
         self.damage_cooldown = max(0, self.damage_cooldown - dt)
         self.damage_flash_timer = max(0, self.damage_flash_timer - dt)
         self.knockback_timer = max(0, self.knockback_timer - dt)
+        self.knockback_velocity_x = self._move_towards(
+            self.knockback_velocity_x,
+            0.0,
+            self.knockback_deceleration * dt
+        )
 
         # Start light attack
         if self.attack_requested and self.attack_cooldown <= 0:
@@ -157,20 +173,32 @@ class Player:
         )
 
         # Jump
-        if self.jump_buffer > 0 and self.coyote_time > 0:
+        can_ground_jump = (
+            self.jump_buffer > 0
+            and self.coyote_time > 0
+            and self.jumps_remaining > 0
+        )
+        can_air_jump = (
+            self.jump_buffer > 0
+            and not self.grounded
+            and self.jumps_remaining == 1
+        )
+
+        if can_ground_jump or can_air_jump:
             self.velocity_y = self.jump_strength
             self.grounded = False
             self.coyote_time = 0
             self.jump_buffer = 0
+            self.jumps_remaining -= 1
 
         # Horizontal movement / dash
-        if self.knockback_timer > 0:
-            self.velocity_x = self.knockback_direction * self.knockback_speed
-        elif self.dash_timer > 0:
-            self.velocity_x = self.dash_direction * self.dash_speed
+        if self.dash_timer > 0:
+            movement_velocity_x = self.dash_direction * self.dash_speed
             self.dash_timer = max(0, self.dash_timer - dt)
         else:
-            self.velocity_x = movement_x * self.move_speed
+            movement_velocity_x = movement_x * self.move_speed
+
+        self.velocity_x = movement_velocity_x + self.knockback_velocity_x
 
         self.x += self.velocity_x * dt
 
@@ -185,19 +213,29 @@ class Player:
             floor_y
         )
 
+        # Update animation state and frame
+        if self.animator is not None:
+            self.animator.update(dt, player=self)
+
     def draw(self, screen):
-        colour = self.colour
-        if (
+        frame = self.animator.get_current_frame() if self.animator is not None else None
+        is_flashing = (
             self.damage_flash_timer > 0
             and int(self.damage_flash_timer * 20) % 2 == 0
-        ):
-            colour = (255, 255, 255)
-
-        pygame.draw.rect(
-            screen,
-            colour,
-            self.rect
         )
+
+        if frame is not None:
+            if is_flashing:
+                frame = frame.copy()
+                frame.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_ADD)
+            screen.blit(frame, self.rect)
+        else:
+            colour = (255, 255, 255) if is_flashing else self.colour
+            pygame.draw.rect(
+                screen,
+                colour,
+                self.rect
+            )
         # Draw light attack
         if self.attack_rect is not None:
             pygame.draw.rect(
@@ -214,11 +252,20 @@ class Player:
         self.health = max(0, self.health - damage)
         self.damage_cooldown = self.damage_cooldown_duration
         self.damage_flash_timer = self.damage_cooldown_duration
-        self.knockback_timer = self.damage_cooldown_duration
         self.knockback_direction = knockback_direction
-        self.velocity_x = knockback_direction * self.knockback_speed
+        self.knockback_velocity_x = knockback_direction * self.knockback_speed
+        self.knockback_timer = (
+            self.knockback_speed / self.knockback_deceleration
+        )
+        self.velocity_x = self.knockback_velocity_x
         self.velocity_y = self.bounce_strength
         return True
+
+    @staticmethod
+    def _move_towards(current, target, amount):
+        if current < target:
+            return min(current + amount, target)
+        return max(current - amount, target)
 
 
     @property
