@@ -1,6 +1,5 @@
 
 import pygame
-
 from collision import resolve_player_collisions
 
 
@@ -10,13 +9,33 @@ class Player:
         # Health
         self.max_health = 5
         self.health = self.max_health
+        self.damage_cooldown = 0.0
+        self.damage_cooldown_duration = 0.5
+        self.damage_flash_timer = 0.0
+        self.knockback_speed = 500.0
+        self.bounce_strength = -400.0
+        self.knockback_timer = 0.0
+        self.knockback_direction = 0
+
+        # Light attack
+        self.attack_requested = False
+        self.attack_timer = 0.0
+        self.attack_duration = 0.15
+        self.attack_cooldown = 0.0
+        self.attack_cooldown_duration = 0.3
+
+        self.attack_range = 65
+        self.attack_height = 35
+        self.attack_damage = 10
+
+        self.attack_id = 0
 
         # Position and dimensions
         self.x = float(x)
         self.y = float(y)
 
-        self.width = 48
-        self.height = 48
+        self.width = 60
+        self.height = 60
 
         # Velocity
         self.velocity_x = 0.0
@@ -70,7 +89,27 @@ class Player:
             if event.key == pygame.K_LSHIFT:
                 self.dash_requested = True
 
+            # Light attack
+            if event.key == pygame.K_j:
+                self.attack_requested = True
+
     def update(self, dt, keys, screen_width, floor_y):
+
+        # Update attack timers
+        self.attack_timer = max(0, self.attack_timer - dt)
+        self.attack_cooldown = max(0, self.attack_cooldown - dt)
+        self.damage_cooldown = max(0, self.damage_cooldown - dt)
+        self.damage_flash_timer = max(0, self.damage_flash_timer - dt)
+        self.knockback_timer = max(0, self.knockback_timer - dt)
+
+        # Start light attack
+        if self.attack_requested and self.attack_cooldown <= 0:
+            self.attack_timer = self.attack_duration
+            self.attack_cooldown = self.attack_cooldown_duration
+            self.attack_id += 1
+
+        self.attack_requested = False
+
         # Horizontal input
         movement_x = 0
 
@@ -125,7 +164,9 @@ class Player:
             self.jump_buffer = 0
 
         # Horizontal movement / dash
-        if self.dash_timer > 0:
+        if self.knockback_timer > 0:
+            self.velocity_x = self.knockback_direction * self.knockback_speed
+        elif self.dash_timer > 0:
             self.velocity_x = self.dash_direction * self.dash_speed
             self.dash_timer = max(0, self.dash_timer - dt)
         else:
@@ -145,11 +186,56 @@ class Player:
         )
 
     def draw(self, screen):
+        colour = self.colour
+        if (
+            self.damage_flash_timer > 0
+            and int(self.damage_flash_timer * 20) % 2 == 0
+        ):
+            colour = (255, 255, 255)
+
         pygame.draw.rect(
             screen,
-            self.colour,
+            colour,
             self.rect
         )
+        # Draw light attack
+        if self.attack_rect is not None:
+            pygame.draw.rect(
+                screen,
+                (255, 220, 100),
+                self.attack_rect,
+                2
+            )
 
-    def take_damage(self, damage=1):
+    def take_damage(self, damage=1, knockback_direction=0):
+        if self.damage_cooldown > 0:
+            return False
+
         self.health = max(0, self.health - damage)
+        self.damage_cooldown = self.damage_cooldown_duration
+        self.damage_flash_timer = self.damage_cooldown_duration
+        self.knockback_timer = self.damage_cooldown_duration
+        self.knockback_direction = knockback_direction
+        self.velocity_x = knockback_direction * self.knockback_speed
+        self.velocity_y = self.bounce_strength
+        return True
+
+
+    @property
+    def attack_rect(self):
+        if self.attack_timer <= 0:
+            return None
+
+        if self.facing == 1:
+            attack_x = self.x + self.width
+        else:
+            attack_x = self.x - self.attack_range
+
+        attack_y = self.y + (self.height - self.attack_height) / 2
+
+        return pygame.Rect(
+            round(attack_x),
+            round(attack_y),
+            self.attack_range,
+            self.attack_height
+        )

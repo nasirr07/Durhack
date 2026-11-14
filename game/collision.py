@@ -37,12 +37,17 @@ def check_collision(rect_a, rect_b):
     return rect_a.colliderect(rect_b)
 
 
-def resolve_player_boss_collision(player, boss):
+def resolve_player_boss_collision(
+    player,
+    boss,
+    screen_width=None,
+    floor_y=None
+):
     player_rect = player.rect
     boss_rect = boss.rect
 
     if not player_rect.colliderect(boss_rect):
-        return
+        return False
 
     # Calculate overlap on both axes
     overlap_x = min(
@@ -78,3 +83,8 @@ def resolve_player_boss_collision(player, boss):
         else:
             player.y += overlap_y
             player.velocity_y = 0
+
+    if screen_width is not None and floor_y is not None:
+        resolve_player_collisions(player, screen_width, floor_y)
+
+    return True

@@ -1,20 +1,22 @@
 
 from collision import check_collision
 
-
 class CombatSystem:
     def __init__(self):
         self.active_attacks = []
+        self.last_hit_attack_id = -1
 
-    def damage_boss(self, attack_rect, damage, boss):
-        """
-        Check whether an attack hits the boss.
-        Apply damage if a collision occurs.
+    def update(self, player, boss):
+        attack_rect = player.attack_rect
 
-        Returns True if the attack hits.
-        """
+        if attack_rect is None:
+            return
+
+        # Check whether this swing has already damaged the boss
+        if player.attack_id == self.last_hit_attack_id:
+            return
+
+        # Check collision and apply damage
         if check_collision(attack_rect, boss.rect):
-            boss.take_damage(damage)
-            return True
-
-        return False
+            boss.take_damage(player.attack_damage)
+            self.last_hit_attack_id = player.attack_id

@@ -23,11 +23,11 @@ FLOOR_COLOUR = (90, 90, 100)
 WHITE = (230, 230, 230)
 
 # Environment
-FLOOR_HEIGHT = 100
+FLOOR_HEIGHT = 140
 FLOOR_Y = SCREEN_HEIGHT - FLOOR_HEIGHT
 
 # Create game objects
-player = Player(150, 100)
+player = Player(150, FLOOR_Y - 48)
 
 boss = Boss(
     SCREEN_WIDTH - 400,
@@ -85,8 +85,21 @@ while running:
     boss.update(dt, FLOOR_Y)
 
     # Resolve Collisions
+    if resolve_player_boss_collision(
+        player,
+        boss,
+        SCREEN_WIDTH,
+        FLOOR_Y
+    ):
+        knockback_direction = (
+            -1 if player.rect.centerx < boss.rect.centerx else 1
+        )
+        player.take_damage(
+            knockback_direction=knockback_direction
+        )
 
-    resolve_player_boss_collision(player, boss)
+    # Combat
+    combat.update(player, boss)
 
     # Drawing
     screen.fill(BACKGROUND)
