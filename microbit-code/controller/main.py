@@ -19,4 +19,3 @@ while True:
     display.scroll(direction)
 
     radio.send("temp=%d,light=%d,dir=%s" % (temp, light, direction))
-    sleep(500)
