@@ -1,0 +1,61 @@
+You know for microbits, do I have to use their online editor or can I just write a python file like locally and just use a provided library?
+
+---
+
+right I have installed microbit-stubs and microfs, what now, how can I code and send it
+
+---
+
+ok so main.py is needed always??
+
+---
+
+can you look into receiver/main.py im getting errors?
+
+---
+
+im getting display is not defined??
+
+---
+
+right im goign to need read the serial data from the microbit? how would I do that
+
+---
+
+amazing, so how is the microbit meant to send the data through serial?}
+
+---
+
+how can I send json data using print from the microbit to the serial reader?
+
+---
+
+im getting an error when im sending the serial data, can you look through it please
+
+---
+
+is the print statement in the main.py correct for the json format
+
+---
+
+is ufs already preinstalled with windows or no?
+
+---
+
+if I want to continuously read the serial data, would I need to put the read serial in a thread?
+
+---
+
+hmm, my thread isnt stopping, why?
+
+---
+
+I need to run pygame and I dont have it since im on the newest version of python which doesnt have pygame, I have 3.12 but I need to set it as the default python environment and also would need to install the microbit things again but for 3.12??
+
+---
+
+im getting an error, help pleae
+
+---
+
+but now its extremely slow, how can I fix this?
