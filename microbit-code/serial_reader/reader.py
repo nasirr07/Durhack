@@ -27,6 +27,7 @@ class SerialReader():
                     if not line:
                         continue
                     try:
+                        print(line)
                         line_data = json.loads(line)
                         keys = list(line_data.keys())
                         for k in keys:
@@ -52,3 +53,7 @@ class SerialReader():
     
 r = SerialReader()
 r.Start()
+
+while True:
+    # print(r.GetSerialData())
+    pass
