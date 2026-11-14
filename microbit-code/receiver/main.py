@@ -9,6 +9,6 @@ while True:
     if incoming is not None:
         print("Received data:", incoming)
 
-        display.show(Image.RECEIVED)
+        display.show(Image.HAPPY)
         sleep(200)
         display.clear()
