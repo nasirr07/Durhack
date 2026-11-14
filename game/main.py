@@ -1,4 +1,4 @@
-
+from reader import SerialReader
 import pygame
 import sys
 
@@ -51,6 +51,10 @@ def draw_health(screen, player):
 
         heart = HEART_FONT.render("♥", True, colour)
         screen.blit(heart, (30 + i * 40, 80))
+
+# Data from serial port
+serial_reader = SerialReader()
+serial_reader.Start()
 
 # Game loop
 running = True
@@ -124,6 +128,15 @@ while running:
         True,
         WHITE
     )
+    screen.blit(text, (30, 30))
+    
+    serial_data = serial_reader.GetSerialData()
+    serial_text = font.render(
+        f"Temp: {serial_data["temp"]} | Light: {serial_data["light"]} | Dir: {serial_data["dir"]}",
+        True,
+        WHITE
+    )
+    screen.blit(serial_text, (30, 60))
 
     screen.blit(text, (30, 30))
 

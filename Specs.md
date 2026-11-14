@@ -1,6 +1,6 @@
 # SPECS FOR THE DURHACK PROJECT
 
-- Get data from microbit
+ - Get data from microbit DONE
 - data reader
 - Make receiver
 
