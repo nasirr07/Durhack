@@ -1,6 +1,5 @@
 from microbit import *
 import radio 
-import json 
 
 radio.on()
 radio.config(channel = 10, group = 200)
