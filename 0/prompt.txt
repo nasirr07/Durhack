@@ -1,0 +1,29 @@
+Add a dash ability for the player, bound to left shift, give the dash a short cool down and include the change to the controls at the top.
+
+---
+
+Implement a simple dash mechanic directly in the existing player physics/game loop in game/main.py.
+
+Requirements:
+
+Left Shift activates the dash.
+
+Dash moves the player horizontally in their current facing direction.
+
+Dash duration: 0.15 seconds.
+
+Dash cooldown: 0.8 seconds.
+
+Dash speed: 900 pixels per second.
+
+The dash direction is locked when activated.
+
+Normal movement resumes when the dash ends.
+
+Keep the existing gravity, jumping, floor collision and screen boundaries working.
+
+Do not create additional controllers, classes, files, dependencies or unit tests.
+
+Keep the implementation straightforward and consistent with the existing code.
+
+Explain the changes afterwards.
