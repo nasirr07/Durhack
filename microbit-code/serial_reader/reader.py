@@ -53,6 +53,3 @@ class SerialReader():
 r = SerialReader()
 r.Start()
 
-while True:
-    print(r.GetSerialData())
-    time.sleep(0.05)
