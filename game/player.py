@@ -1,10 +1,14 @@
 
 import pygame
 from collision import resolve_player_collisions
+from animator import Animator
 
 
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x, y, animator=None):
+
+        # Animator
+        self.animator = animator if animator is not None else Animator()
 
         # Health
         self.max_health = 5
@@ -185,19 +189,29 @@ class Player:
             floor_y
         )
 
+        # Update animation state and frame
+        if self.animator is not None:
+            self.animator.update(dt, player=self)
+
     def draw(self, screen):
-        colour = self.colour
-        if (
+        frame = self.animator.get_current_frame() if self.animator is not None else None
+        is_flashing = (
             self.damage_flash_timer > 0
             and int(self.damage_flash_timer * 20) % 2 == 0
-        ):
-            colour = (255, 255, 255)
-
-        pygame.draw.rect(
-            screen,
-            colour,
-            self.rect
         )
+
+        if frame is not None:
+            if is_flashing:
+                frame = frame.copy()
+                frame.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_ADD)
+            screen.blit(frame, self.rect)
+        else:
+            colour = (255, 255, 255) if is_flashing else self.colour
+            pygame.draw.rect(
+                screen,
+                colour,
+                self.rect
+            )
         # Draw light attack
         if self.attack_rect is not None:
             pygame.draw.rect(
