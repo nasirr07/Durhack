@@ -1,4 +1,4 @@
-
+from reader import SerialReader
 import pygame
 import sys
 
@@ -61,6 +61,10 @@ JUMP_BUFFER_DURATION = 0.12
 
 # UI
 font = pygame.font.Font(None, 28)
+
+# Data from serial port
+serial_reader = SerialReader()
+serial_reader.Start()
 
 # Game loop
 running = True
@@ -191,6 +195,14 @@ while running:
         WHITE
     )
     screen.blit(text, (30, 30))
+    
+    serial_data = serial_reader.GetSerialData()
+    serial_text = font.render(
+        f"Temp: {serial_data["temp"]} | Light: {serial_data["light"]} | Dir: {serial_data["dir"]}",
+        True,
+        WHITE
+    )
+    screen.blit(serial_text, (30, 60))
 
 
     pygame.display.flip()
