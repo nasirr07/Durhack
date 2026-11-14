@@ -16,6 +16,8 @@ class SerialReader():
                 return port.device
     
     def ReadSerial(self):
+        if not self.microbit_port:
+            return
         while self.do_read_serial:
             with serial.Serial(self.microbit_port, 115200, timeout=1.0) as ser:
                 ser.reset_input_buffer()
@@ -24,16 +26,14 @@ class SerialReader():
                     if not raw:
                         continue
                     line = raw.decode("utf-8", errors="ignore").strip()
-                    if not line:
+                    if not (line.startswith("{") and line.endswith("}")):
                         continue
                     try:
                         line_data = json.loads(line)
-                        keys = list(line_data.keys())
-                        for k in keys:
-                            self.data[k] = line_data[k]
-                        
-                    except json.JSONDecodeError as e:
-                        print("JSON error on line:", repr(line), e)
+                        for k, v in line_data.items():
+                            self.data[k] = v
+                    except json.JSONDecodeError:
+                        continue
                     
     
     def Start(self):
