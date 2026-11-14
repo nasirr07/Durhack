@@ -1,0 +1,47 @@
+Add a dash ability for the player, bound to left shift, give the dash a short cool down and include the change to the controls at the top.
+
+---
+
+Implement a simple dash mechanic directly in the existing player physics/game loop in game/main.py.
+
+Requirements:
+
+Left Shift activates the dash.
+
+Dash moves the player horizontally in their current facing direction.
+
+Dash duration: 0.15 seconds.
+
+Dash cooldown: 0.8 seconds.
+
+Dash speed: 900 pixels per second.
+
+The dash direction is locked when activated.
+
+Normal movement resumes when the dash ends.
+
+Keep the existing gravity, jumping, floor collision and screen boundaries working.
+
+Do not create additional controllers, classes, files, dependencies or unit tests.
+
+Keep the implementation straightforward and consistent with the existing code.
+
+Explain the changes afterwards.
+
+---
+
+Fix player health being drawn onto the screen with minimal changes to the remaining code.
+
+---
+
+Review my code and suggest any improvements, but don't make them.
+
+---
+
+Fix issue 1, take one damage upon toucing the boss.
+Fix issue 5, and issue 4.
+Explain why 2 is an issue.
+
+---
+
+When taking damage from collision between the player and the boss, make the player flash and bounce back for the duration of the immunity to clearly indicate immunity and damage taken, also increase the height of the floor(by a bit), making the relevant changes to the start position
