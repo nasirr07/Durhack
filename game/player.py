@@ -51,6 +51,8 @@ class Player:
         self.gravity = 1300.0
         self.jump_strength = -650.0
         self.move_speed = 350.0
+        self.max_jumps = 2
+        self.jumps_remaining = 0
 
         # Dash settings
         self.dash_speed = 900.0
@@ -171,11 +173,23 @@ class Player:
         )
 
         # Jump
-        if self.jump_buffer > 0 and self.coyote_time > 0:
+        can_ground_jump = (
+            self.jump_buffer > 0
+            and self.coyote_time > 0
+            and self.jumps_remaining > 0
+        )
+        can_air_jump = (
+            self.jump_buffer > 0
+            and not self.grounded
+            and self.jumps_remaining == 1
+        )
+
+        if can_ground_jump or can_air_jump:
             self.velocity_y = self.jump_strength
             self.grounded = False
             self.coyote_time = 0
             self.jump_buffer = 0
+            self.jumps_remaining -= 1
 
         # Horizontal movement / dash
         if self.dash_timer > 0:

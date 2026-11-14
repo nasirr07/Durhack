@@ -29,6 +29,7 @@ def resolve_player_collisions(player, screen_width, floor_y):
         player.y = floor_y - player.height
         player.velocity_y = 0
         player.grounded = True
+        player.jumps_remaining = player.max_jumps
     else:
         player.grounded = False
 
@@ -90,6 +91,7 @@ def resolve_player_boss_collision(
             player.y -= overlap_y
             player.velocity_y = 0
             player.grounded = True
+            player.jumps_remaining = player.max_jumps
 
         # Player is below the boss
         else:
