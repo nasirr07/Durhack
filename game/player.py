@@ -17,9 +17,11 @@ class Player:
         self.damage_cooldown_duration = 0.5
         self.damage_flash_timer = 0.0
         self.knockback_speed = 500.0
+        self.knockback_deceleration = 700.0
         self.bounce_strength = -400.0
         self.knockback_timer = 0.0
         self.knockback_direction = 0
+        self.knockback_velocity_x = 0.0
 
         # Light attack
         self.attack_requested = False
@@ -67,6 +69,9 @@ class Player:
         self.grounded = False
         self.coyote_time = 0.0
         self.jump_buffer = 0.0
+        self.boss_collision_direction = 0
+        self.boss_collision_started = False
+        self.boss_contact_active = False
 
         self.coyote_duration = 0.12
         self.jump_buffer_duration = 0.12
@@ -105,6 +110,11 @@ class Player:
         self.damage_cooldown = max(0, self.damage_cooldown - dt)
         self.damage_flash_timer = max(0, self.damage_flash_timer - dt)
         self.knockback_timer = max(0, self.knockback_timer - dt)
+        self.knockback_velocity_x = self._move_towards(
+            self.knockback_velocity_x,
+            0.0,
+            self.knockback_deceleration * dt
+        )
 
         # Start light attack
         if self.attack_requested and self.attack_cooldown <= 0:
@@ -168,13 +178,13 @@ class Player:
             self.jump_buffer = 0
 
         # Horizontal movement / dash
-        if self.knockback_timer > 0:
-            self.velocity_x = self.knockback_direction * self.knockback_speed
-        elif self.dash_timer > 0:
-            self.velocity_x = self.dash_direction * self.dash_speed
+        if self.dash_timer > 0:
+            movement_velocity_x = self.dash_direction * self.dash_speed
             self.dash_timer = max(0, self.dash_timer - dt)
         else:
-            self.velocity_x = movement_x * self.move_speed
+            movement_velocity_x = movement_x * self.move_speed
+
+        self.velocity_x = movement_velocity_x + self.knockback_velocity_x
 
         self.x += self.velocity_x * dt
 
@@ -228,11 +238,20 @@ class Player:
         self.health = max(0, self.health - damage)
         self.damage_cooldown = self.damage_cooldown_duration
         self.damage_flash_timer = self.damage_cooldown_duration
-        self.knockback_timer = self.damage_cooldown_duration
         self.knockback_direction = knockback_direction
-        self.velocity_x = knockback_direction * self.knockback_speed
+        self.knockback_velocity_x = knockback_direction * self.knockback_speed
+        self.knockback_timer = (
+            self.knockback_speed / self.knockback_deceleration
+        )
+        self.velocity_x = self.knockback_velocity_x
         self.velocity_y = self.bounce_strength
         return True
+
+    @staticmethod
+    def _move_towards(current, target, amount):
+        if current < target:
+            return min(current + amount, target)
+        return max(current - amount, target)
 
 
     @property

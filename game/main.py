@@ -54,6 +54,54 @@ def draw_health(screen, player):
         heart = HEART_FONT.render("♥", True, colour)
         screen.blit(heart, (30 + i * 40, 80))
 
+
+def draw_menu(screen):
+    screen.fill(BACKGROUND)
+
+    title_font = pygame.font.Font(None, 100)
+    button_font = pygame.font.Font(None, 50)
+
+    title = title_font.render("MICROROGUE", True, WHITE)
+    screen.blit(
+        title,
+        (SCREEN_WIDTH // 2 - title.get_width() // 2, SCREEN_HEIGHT // 3)
+    )
+
+    # Button rectangles
+    play_button = pygame.Rect(
+        SCREEN_WIDTH // 2 - 120,
+        SCREEN_HEIGHT // 2,
+        240,
+        70
+    )
+
+    exit_button = pygame.Rect(
+        SCREEN_WIDTH // 2 - 120,
+        SCREEN_HEIGHT // 2 + 100,
+        240,
+        70
+    )
+
+    mouse_pos = pygame.mouse.get_pos()
+
+    # Play button
+    play_colour = (70, 180, 100) if play_button.collidepoint(mouse_pos) else (40, 130, 70)
+    pygame.draw.rect(screen, play_colour, play_button, border_radius=12)
+
+    play_text = button_font.render("PLAY", True, WHITE)
+    screen.blit(play_text, play_text.get_rect(center=play_button.center))
+
+    # Exit button
+    exit_colour = (200, 70, 70) if exit_button.collidepoint(mouse_pos) else (140, 40, 40)
+    pygame.draw.rect(screen, exit_colour, exit_button, border_radius=12)
+
+    exit_text = button_font.render("EXIT", True, WHITE)
+    screen.blit(exit_text, exit_text.get_rect(center=exit_button.center))
+
+    pygame.display.flip()
+
+    return play_button, exit_button
+
 # Data from serial port
 serial_reader = SerialReader()
 serial_reader.Start()
@@ -126,6 +174,30 @@ floor_surface = build_floor_surface(SCREEN_WIDTH, FLOOR_HEIGHT)
 
 # Game loop
 running = True
+menu_running = True 
+
+while menu_running and running:
+
+    play_button, exit_button = draw_menu(screen)
+
+    for event in pygame.event.get():
+
+        if event.type == pygame.QUIT:
+            running = False
+            menu_running = False
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+
+                if play_button.collidepoint(event.pos):
+                    menu_running = False
+
+                elif exit_button.collidepoint(event.pos):
+                    running = False
+                    menu_running = False
+
+    clock.tick(60)
+
 
 while running:
     dt = min(clock.tick(60) / 1000, 0.05)
@@ -162,12 +234,9 @@ while running:
         boss,
         SCREEN_WIDTH,
         FLOOR_Y
-    ):
-        knockback_direction = (
-            -1 if player.rect.centerx < boss.rect.centerx else 1
-        )
+    ) and player.boss_collision_started:
         player.take_damage(
-            knockback_direction=knockback_direction
+            knockback_direction=player.boss_collision_direction
         )
 
     # Combat

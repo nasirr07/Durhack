@@ -6,11 +6,17 @@ def resolve_player_collisions(player, screen_width, floor_y):
     # Horizontal screen boundaries
     if player.x < 0:
         player.x = 0
-        player.velocity_x = 0
+        if player.velocity_x < 0:
+            player.velocity_x = 0
+        if player.knockback_velocity_x < 0:
+            player.knockback_velocity_x = 0
 
     if player.x + player.width > screen_width:
         player.x = screen_width - player.width
-        player.velocity_x = 0
+        if player.velocity_x > 0:
+            player.velocity_x = 0
+        if player.knockback_velocity_x > 0:
+            player.knockback_velocity_x = 0
 
     # Vertical collision with floor
     previous_bottom = player.y + player.height
@@ -47,7 +53,15 @@ def resolve_player_boss_collision(
     boss_rect = boss.rect
 
     if not player_rect.colliderect(boss_rect):
+        player.boss_contact_active = False
+        player.boss_collision_started = False
         return False
+
+    player.boss_collision_started = not player.boss_contact_active
+    player.boss_contact_active = True
+    player.boss_collision_direction = (
+        -1 if player_rect.centerx < boss_rect.centerx else 1
+    )
 
     # Calculate overlap on both axes
     overlap_x = min(
@@ -68,8 +82,6 @@ def resolve_player_boss_collision(
             player.x -= overlap_x
         else:
             player.x += overlap_x
-
-        player.velocity_x = 0
 
     else:
 
