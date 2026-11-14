@@ -1,21 +1,25 @@
 import os
 import pygame
 
-# Native grid cell dimensions (cell_w, cell_h) and optional active crop (x, y, w, h)
-# inside each cell so the Samurai stays consistent in size and floor-aligned when scaled to 60x60.
+# Each Samurai sprite's standing body occupies a 16x14 base box (body_x, body_y, 16, 14).
+# Attack/death sheets use larger cells around that 16x14 body box for sword swings.
+# Storing ((cell_w, cell_h), (body_x, body_y), (pad_x, pad_y)) lets us scale every
+# sheet by the exact same pixel ratio (target_w / 16, target_h / 14) so the character
+# is identical in size across idle, run, jump, and attacks.
+_BASE_BODY_W = 16
+_BASE_BODY_H = 14
+
 _SHEET_SPECS = {
-    "idle_spritesheet": ((16, 16), (0, 0, 16, 14)),
-    "run_spritesheet": ((16, 16), (0, 0, 16, 14)),
-    "jump_spritesheet": ((16, 16), (0, 0, 16, 16)),
-    "hit_spritesheet": ((16, 16), (0, 0, 16, 16)),
-    "healing_spritesheet": ((16, 32), (0, 4, 16, 16)),
-    "double_jump_spritesheet": ((32, 32), (0, 0, 32, 32)),
-    "death_spritesheet": ((32, 16), (0, 0, 20, 16)),
-    "attack_spritesheet": ((48, 48), (6, 12, 36, 22)),
-    "attack_down_spritesheet": ((48, 32), (12, 0, 28, 21)),
-    "dash_attack_spritesheet": ((48, 32), (8, 2, 32, 16)),
-    "attack_up_spritesheet": ((64, 64), (18, 28, 26, 20)),
-    "tiles_spritesheet": ((24, 24), (0, 0, 24, 24)),
+    "idle_spritesheet": ((16, 16), (0, 0), (0, 0)),
+    "run_spritesheet": ((16, 16), (0, 0), (0, 0)),
+    "jump_spritesheet": ((16, 16), (0, 2), (0, 0)),
+    "hit_spritesheet": ((16, 16), (0, 2), (0, 0)),
+    "healing_spritesheet": ((16, 32), (0, 4), (0, 0)),
+    "death_spritesheet": ((32, 16), (0, 2), (4, 0)),
+    "attack_spritesheet": ((48, 48), (13, 18), (15, 3)),
+    "attack_down_spritesheet": ((48, 32), (15, 0), (12, 7)),
+    "dash_attack_spritesheet": ((48, 32), (13, 2), (13, 2)),
+    "attack_up_spritesheet": ((64, 64), (24, 34), (10, 6)),
 }
 
 
@@ -48,7 +52,7 @@ class SpriteSheet:
         return img.convert_alpha() if pygame.display.get_surface() else img
 
     def get_sprites(self, sheet, width=None, height=None, colour=None, name=None):
-        """Slice a spritesheet into a list of (width x height) frame Surfaces (default 60x60)."""
+        """Slice a spritesheet into a list of frame Surfaces where the character body is (width x height)."""
         target_w = width or self.default_width
         target_h = height or self.default_height
 
@@ -58,13 +62,24 @@ class SpriteSheet:
         sheet_surface = self._ensure_surface(sheet)
         sheet_w, sheet_h = sheet_surface.get_size()
 
-        crop_rect = None
         if name in _SHEET_SPECS:
-            (cell_w, cell_h), crop_rect = _SHEET_SPECS[name]
-        elif sheet_w >= target_w and sheet_h >= target_h:
-            cell_w, cell_h = target_w, target_h
+            (cell_w, cell_h), (bx, by), (pad_x, pad_y) = _SHEET_SPECS[name]
+            crop_w = _BASE_BODY_W + 2 * pad_x
+            crop_h = _BASE_BODY_H + 2 * pad_y
+            out_w = round(crop_w * (target_w / _BASE_BODY_W))
+            out_h = round(crop_h * (target_h / _BASE_BODY_H))
         else:
-            cell_w, cell_h = sheet_w, sheet_h
+            bx = by = pad_x = pad_y = 0
+            if name == "double_jump_spritesheet":
+                cell_w, cell_h = 32, 32
+            elif name == "tiles_spritesheet":
+                cell_w, cell_h = 24, 24
+            elif sheet_w >= target_w and sheet_h >= target_h:
+                cell_w, cell_h = target_w, target_h
+            else:
+                cell_w, cell_h = sheet_w, sheet_h
+            crop_w, crop_h = cell_w, cell_h
+            out_w, out_h = target_w, target_h
 
         cols = max(1, sheet_w // cell_w)
         rows = max(1, sheet_h // cell_h)
@@ -84,16 +99,15 @@ class SpriteSheet:
                 if pygame.mask.from_surface(cell_surf).count() == 0:
                     continue
 
-                if crop_rect is not None:
-                    cx, cy, cw, ch = crop_rect
-                    cropped = pygame.Surface((cw, ch), pygame.SRCALPHA)
-                    cropped.blit(cell_surf, (0, 0), (cx, cy, cw, ch))
-                    frame_surf = cropped
+                if name in _SHEET_SPECS:
+                    # Blit onto a symmetrically padded surface centered on the 16x14 character body
+                    frame_surf = pygame.Surface((crop_w, crop_h), pygame.SRCALPHA)
+                    frame_surf.blit(cell_surf, (pad_x - bx, pad_y - by))
                 else:
                     frame_surf = cell_surf
 
-                if frame_surf.get_size() != (target_w, target_h):
-                    frame_surf = pygame.transform.scale(frame_surf, (target_w, target_h))
+                if frame_surf.get_size() != (out_w, out_h):
+                    frame_surf = pygame.transform.scale(frame_surf, (out_w, out_h))
 
                 if pygame.display.get_surface():
                     frame_surf = frame_surf.convert_alpha()

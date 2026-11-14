@@ -228,7 +228,8 @@ class Player:
             if is_flashing:
                 frame = frame.copy()
                 frame.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_ADD)
-            screen.blit(frame, self.rect)
+            dest = frame.get_rect(center=self.rect.center)
+            screen.blit(frame, dest)
         else:
             colour = (255, 255, 255) if is_flashing else self.colour
             pygame.draw.rect(

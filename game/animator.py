@@ -92,7 +92,8 @@ class Animator:
         if not frames:
             return None
 
-        self.frame_index += dt * self.fps * self.animation_speed
+        state_speed = 4.0 if self.current_state in ("attack", "dash_attack", "attack_up", "attack_down") else 1.0
+        self.frame_index += dt * self.fps * self.animation_speed * state_speed
 
         if self.loop:
             self.frame_index %= len(frames)
@@ -118,10 +119,14 @@ class Animator:
         return frame
 
     def draw(self, screen, pos_or_rect, flip_x=None):
-        """Draw the current frame onto screen at the given (x, y) or pygame.Rect."""
+        """Draw the current frame onto screen centered on pos_or_rect if it's a pygame.Rect."""
         frame = self.get_current_frame(flip_x=flip_x)
         if frame is not None:
-            screen.blit(frame, pos_or_rect)
+            if isinstance(pos_or_rect, pygame.Rect):
+                dest = frame.get_rect(center=pos_or_rect.center)
+                screen.blit(frame, dest)
+            else:
+                screen.blit(frame, pos_or_rect)
 
     # PascalCase aliases
     GetFrames = get_frames
