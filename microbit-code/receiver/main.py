@@ -14,9 +14,7 @@ while True:
         light = int(data[1].split("=")[1])
         direction = data[2].split("=")[1]
 
-        print("Temperature:", temp)
-        print("Light:", light)
-        print("Direction:", direction)
+        print('{"temperature": %d, "light": %d, "direction": "%s"}' % (temp, light, direction))
 
     else:
         print("Invalid message:", incoming)
