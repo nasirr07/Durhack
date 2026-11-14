@@ -49,7 +49,3 @@ class SerialReader():
                 
     def GetSerialData(self):
         return self.data
-    
-r = SerialReader()
-r.Start()
-
