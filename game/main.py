@@ -523,10 +523,16 @@ def draw_gameplay(screen, session, background_surface, floor_surface, font, seri
 
 def main():
     pygame.init()
+    pygame.mixer.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption("MicroRogue")
     clock = pygame.time.Clock()
 
+    wind_sound = pygame.mixer.Sound("assets/Weather/wind_sound.wav")
+    wind_sound.set_volume(0.5)
+    print("Wind sound loaded successfully!")
+    print("Duration:", wind_sound.get_length())
+    
     width, height = screen.get_size()
     floor_height = 140
     floor_y = height - floor_height
@@ -538,6 +544,7 @@ def main():
         width,
         floor_y,
         weather_assets.get("PixelatedSun"),
+        wind_sound=wind_sound
     )
 
     ui = PixelUI((width, height), ASSETS_DIR)
@@ -554,6 +561,7 @@ def main():
     while running:
         dt = min(clock.tick(60) / 1000, 0.05)
         events = pygame.event.get()
+
 
         if controller.state == ScreenState.START:
             option_rects = ui.draw_start(
