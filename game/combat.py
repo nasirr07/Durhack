@@ -14,7 +14,36 @@ class CombatSystem:
                 knockback_direction=getattr(boss, "facing", -1),
             )
 
-        # 2. Check player's attack hitting the boss
+        # 2. Check boss's ranged fireballs hitting the player via mask collision
+        player_mask = getattr(player, "body_mask", None)
+        for fireball in getattr(boss, "fireballs", ()):
+            if not fireball.active:
+                continue
+            if player_mask is not None and getattr(fireball, "mask", None) is not None:
+                hit_fb = check_mask_collision(
+                    fireball.rect, fireball.mask, player.rect, player_mask
+                )
+            else:
+                hit_fb = check_collision(fireball.rect, player.rect)
+
+            if hit_fb:
+                fireball.active = False
+                knockback_dir = -1 if fireball.vx < 0 else 1
+                player.take_damage(
+                    damage=getattr(fireball, "damage", 1),
+                    knockback_direction=knockback_dir,
+                )
+
+        # 3. Check boss's sky-drop heat waves (player is safe inside the gap)
+        for hw in getattr(boss, "heat_waves", ()):
+            if hw.check_hit(player):
+                knockback_dir = -1 if player.rect.centerx < hw.gap_rect.centerx else 1
+                player.take_damage(
+                    damage=getattr(hw, "damage", 1),
+                    knockback_direction=knockback_dir,
+                )
+
+        # 4. Check player's attack hitting the boss
         attack_rect = player.attack_rect
         if attack_rect is None:
             return
