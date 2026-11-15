@@ -19,14 +19,14 @@ class BossHealthBar:
     HEIGHT = 18
     MAX_WIDTH = 680
     SIDE_MARGIN = 64
-    BOTTOM_MARGIN = 28
+    TOP_MARGIN = 36
     DAMAGE_TRAIL_SPEED = 0.8
 
     def __init__(self, screen_size, font):
         self.width, self.height = screen_size
         self.font = font
         bar_width = min(self.MAX_WIDTH, self.width - 2 * self.SIDE_MARGIN)
-        top = self.height - self.BOTTOM_MARGIN - self.HEIGHT
+        top = self.TOP_MARGIN
         self.rect = pygame.Rect(
             (self.width - bar_width) // 2,
             top,

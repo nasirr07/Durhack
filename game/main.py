@@ -425,6 +425,7 @@ from reader import SerialReader
 from screen_flow import ScreenController, ScreenState
 from session import GameplaySession
 from spritesheet import SpriteSheet
+from taunts import BossTauntBox
 from ui import BossHealthBar, PALETTE, PixelUI
 from audio import GameAudio
 from lighting import DarknessSystem
@@ -504,6 +505,7 @@ def draw_gameplay(
     serial_data,
     lighting=None,
     boss_health_bar=None,
+    taunt_box=None,
     dt=0.0,
 ):
     shake_x, shake_y = session.hazard.shake_offset
@@ -537,6 +539,10 @@ def draw_gameplay(
     if boss_health_bar is not None:
         boss_health_bar.update(dt, session.boss)
         boss_health_bar.draw(screen)
+
+    if taunt_box is not None:
+        taunt_box.update(dt, session, serial_data)
+        taunt_box.draw(screen)
 
     instructions = font.render(
         "A/D move   Space jump   Shift dash   J strike   Esc quit",
@@ -587,6 +593,7 @@ def main():
 
     ui = PixelUI((width, height), ASSETS_DIR)
     boss_health_bar = BossHealthBar((width, height), ui.heading_font)
+    taunt_box = BossTauntBox((width, height), ui.body_font, ui.small_font, audio=audio)
     hud_font = pygame.font.Font(
         os.path.join(ASSETS_DIR, "Fonts", "Silkscreen-Regular.ttf"),
         max(14, min(width, height) // 55),
@@ -649,6 +656,7 @@ def main():
                     serial_data,
                     lighting,
                     boss_health_bar,
+                    taunt_box,
                     dt,
                 )
                 if session.player.health <= 0 or session.boss.health <= 0:
@@ -672,11 +680,13 @@ def main():
                 action = controller.handle_event(event)
                 if action == "restart":
                     session.reset()
+                    taunt_box.reset()
                     audio.start_gameplay_music()
                     controller.state = ScreenState.GAMEPLAY
                 elif action == "menu":
                     audio.stop_gameplay_music()
                     session.reset()
+                    taunt_box.reset()
                     controller.show_start_screen()
 
         pygame.display.flip()

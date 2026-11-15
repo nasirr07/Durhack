@@ -13,6 +13,7 @@ class GameAudio:
         "boss_miss": "boss_miss_sword.mp3",
         "dash": "dash.mp3",
         "walking": "Walking.mp3",
+        "dialogue_blip": "dialogue_blip.wav",
     }
 
     def __init__(self, sound_directory=None):
@@ -51,7 +52,7 @@ class GameAudio:
             return
         try:
             sound = pygame.mixer.Sound(path)
-            sound.set_volume(0.5)
+            sound.set_volume(0.28 if name == "dialogue_blip" else 0.5)
             self.sounds[name] = sound
         except pygame.error:
             return
