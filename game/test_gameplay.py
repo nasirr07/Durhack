@@ -4,6 +4,7 @@ import pygame
 
 from boss import Boss
 from collision import resolve_player_boss_collision
+from combat import CombatSystem
 from player import Player
 
 
@@ -229,6 +230,77 @@ class GameplayTests(unittest.TestCase):
 
         self.assertEqual(player.jumps_remaining, 1)
         self.assertLess(player.velocity_y, 0)
+
+    def test_boss_has_tight_body_hitbox_and_mask(self):
+        boss = Boss(300, 100)
+        self.assertEqual(boss.rect.size, (boss.width, boss.height))
+        self.assertGreater(boss.body_mask.count(), 0)
+        # Player standing in the empty transparent margin to the left of the boss does NOT collide with the body
+        player = Player(200, 150)
+        self.assertFalse(resolve_player_boss_collision(player, boss))
+
+    def test_boss_cleaver_attack_mask_damages_player(self):
+        boss = Boss(300, 100)
+        player = Player(210, 150)  # In front of boss's left-facing cleaver swing
+        combat = CombatSystem()
+
+        boss.start_attack()
+        boss.animation_index = 10  # Active cleave frame
+        boss._sync_image()
+
+        self.assertTrue(boss.is_attack_active)
+        self.assertIsNotNone(boss.attack_rect)
+        self.assertIsNotNone(boss.attack_mask)
+
+        combat.update(player, boss)
+        self.assertEqual(player.health, player.max_health - 1)
+
+    def test_boss_shoots_fireballs_only_when_temperature_over_26(self):
+        boss = Boss(600, 100)
+        player = Player(100, 250)
+        combat = CombatSystem()
+
+        # At 26 C or below, no fireballs are spawned
+        boss.update(1.0, 600, player=player, temperature=26.0)
+        self.assertEqual(len(boss.fireballs), 0)
+
+        # Above 26 C, boss summons a volley of 5 fireballs at once that fade in and linger first
+        boss.update(0.85, 600, player=player, temperature=27.0)
+        self.assertEqual(len(boss.fireballs), 5)
+        self.assertTrue(all(not fb.launched for fb in boss.fireballs))
+        self.assertLess(boss.fireballs[0].alpha, 255)
+
+        # After 0.8s, only the first fireball (launch_delay=0.75s) has launched sequentially
+        boss.update(0.8, 600, player=player, temperature=27.0)
+        launched_states = [fb.launched for fb in boss.fireballs]
+        self.assertEqual(launched_states, [True, False, False, False, False])
+
+        # Move first fireball onto player and verify mask hit damages player and despawns fireball
+        fb = boss.fireballs[0]
+        fb.x = player.x
+        fb.y = player.y
+        combat.update(player, boss)
+        self.assertEqual(player.health, player.max_health - 1)
+        self.assertFalse(fb.active)
+
+    def test_heat_wave_drops_from_sky_and_safe_gap_protects_player(self):
+        boss = Boss(800, 100)
+        combat = CombatSystem()
+
+        hw = boss.spawn_heat_wave(gap_x=200, arena_width=700)
+        # Advance past telegraph so the heat wave is actively dropping at y=200
+        hw.age = hw.telegraph_duration + 0.1
+        hw.y = 200.0
+
+        # Player standing inside the safe gap (x=230, width=60 inside gap 200..360) is completely safe
+        safe_player = Player(230, 210)
+        combat.update(safe_player, boss)
+        self.assertEqual(safe_player.health, safe_player.max_health)
+
+        # Player standing outside the safe gap (x=60, width=60 inside left flame curtain) takes damage
+        hit_player = Player(60, 210)
+        combat.update(hit_player, boss)
+        self.assertEqual(hit_player.health, hit_player.max_health - 1)
 
 
 if __name__ == "__main__":

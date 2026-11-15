@@ -5,10 +5,11 @@ from animator import Animator
 
 
 class Player:
-    def __init__(self, x, y, animator=None):
+    def __init__(self, x, y, animator=None, audio=None):
 
         # Animator
         self.animator = animator if animator is not None else Animator()
+        self.audio = audio
 
         # Health
         self.max_health = 5
@@ -35,6 +36,7 @@ class Player:
         self.attack_damage = 10
 
         self.attack_id = 0
+        self.attack_hit = False
 
         # Position and dimensions
         self.x = float(x)
@@ -89,6 +91,27 @@ class Player:
             self.height
         )
 
+    @property
+    def body_mask(self):
+        """pygame.mask.Mask for the player's 60x60 body hitbox."""
+        return pygame.mask.Mask((self.width, self.height), fill=True)
+
+    @property
+    def mask(self):
+        """pygame.mask.Mask from the current animated player sprite (or body fallback)."""
+        frame = self.animator.get_current_frame() if self.animator is not None else None
+        if frame is not None:
+            return pygame.mask.from_surface(frame)
+        return self.body_mask
+
+    @property
+    def attack_mask(self):
+        """pygame.mask.Mask for the player's active attack hitbox."""
+        atk = self.attack_rect
+        if atk is None:
+            return None
+        return pygame.mask.Mask((atk.width, atk.height), fill=True)
+
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
 
@@ -107,7 +130,11 @@ class Player:
     def update(self, dt, keys, screen_width, floor_y):
 
         # Update attack timers
+        was_attacking = self.attack_timer > 0
         self.attack_timer = max(0, self.attack_timer - dt)
+        if was_attacking and self.attack_timer <= 0 and not self.attack_hit:
+            if self.audio is not None:
+                self.audio.play("player_miss")
         self.attack_cooldown = max(0, self.attack_cooldown - dt)
         self.damage_cooldown = max(0, self.damage_cooldown - dt)
         self.damage_flash_timer = max(0, self.damage_flash_timer - dt)
@@ -123,6 +150,9 @@ class Player:
             self.attack_timer = self.attack_duration
             self.attack_cooldown = self.attack_cooldown_duration
             self.attack_id += 1
+            self.attack_hit = False
+            if self.audio is not None:
+                self.audio.play("player_attack")
 
         self.attack_requested = False
 
@@ -154,6 +184,8 @@ class Player:
             self.dash_timer = self.dash_duration
             self.dash_cooldown = self.dash_cooldown_duration
             self.dash_direction = self.facing
+            if self.audio is not None:
+                self.audio.play("dash")
 
         self.dash_requested = False
 

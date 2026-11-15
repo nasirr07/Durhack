@@ -6,17 +6,19 @@ from player import Player
 
 
 class GameplaySession:
-    def __init__(self, screen_width, floor_y, weather=None):
+    def __init__(self, screen_width, floor_y, weather=None, audio=None):
         self.screen_width = screen_width
         self.floor_y = floor_y
         self.weather = weather
+        self.audio = audio
         self.reset()
 
     def reset(self):
-        self.player = Player(150, self.floor_y - 48)
+        self.player = Player(150, self.floor_y - 48, audio=self.audio)
+        self.player = Player(150, self.floor_y - 60)
         self.boss = Boss(
-            self.screen_width - 400,
-            self.floor_y - 300,
+            self.screen_width - 330,
+            self.floor_y - 389,
         )
         self.combat = CombatSystem()
         self.hazard = EarthquakeHazard(self.screen_width, self.floor_y)
@@ -26,7 +28,7 @@ class GameplaySession:
 
     def update(self, dt, keys, direction="none", temperature=None):
         self.player.update(dt, keys, self.screen_width, self.floor_y)
-        self.boss.update(dt, self.floor_y)
+        self.boss.update(dt, self.floor_y, self.player, temperature)
 
         if resolve_player_boss_collision(
             self.player,
