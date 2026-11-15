@@ -425,7 +425,7 @@ from reader import SerialReader
 from screen_flow import ScreenController, ScreenState
 from session import GameplaySession
 from spritesheet import SpriteSheet
-from ui import PALETTE, PixelUI
+from ui import BossHealthBar, PALETTE, PixelUI
 from audio import GameAudio
 from lighting import DarknessSystem
 from weather import WeatherSystem
@@ -503,6 +503,8 @@ def draw_gameplay(
     font,
     serial_data,
     lighting=None,
+    boss_health_bar=None,
+    dt=0.0,
 ):
     shake_x, shake_y = session.hazard.shake_offset
     screen.blit(background_surface, (shake_x, shake_y))
@@ -518,7 +520,6 @@ def draw_gameplay(
     session.hazard.draw(world)
     screen.blit(world, (shake_x, shake_y))
     
-    draw_health(screen, session.player)
     if lighting is not None:
         lighting.apply(
             screen,
@@ -532,6 +533,10 @@ def draw_gameplay(
             ),
             entity_offset=(shake_x, shake_y),
         )
+    draw_health(screen, session.player)
+    if boss_health_bar is not None:
+        boss_health_bar.update(dt, session.boss)
+        boss_health_bar.draw(screen)
 
     instructions = font.render(
         "A/D move   Space jump   Shift dash   J strike   Esc quit",
@@ -581,6 +586,7 @@ def main():
     lighting = DarknessSystem(screen.get_size())
 
     ui = PixelUI((width, height), ASSETS_DIR)
+    boss_health_bar = BossHealthBar((width, height), ui.heading_font)
     hud_font = pygame.font.Font(
         os.path.join(ASSETS_DIR, "Fonts", "Silkscreen-Regular.ttf"),
         max(14, min(width, height) // 55),
@@ -642,6 +648,8 @@ def main():
                     hud_font,
                     serial_data,
                     lighting,
+                    boss_health_bar,
+                    dt,
                 )
                 if session.player.health <= 0 or session.boss.health <= 0:
                     audio.stop_gameplay_music()

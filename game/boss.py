@@ -853,23 +853,3 @@ class Boss:
 
         for fireball in self.fireballs:
             fireball.draw(screen)
-
-        # Health bar centered over the boss's tight body rect
-        bar_width = 240
-        bar_height = 18
-        health_percentage = self.health / self.max_health
-
-        bar_x = self.rect.centerx - bar_width / 2
-        bar_y = self.rect.top - 30
-
-        pygame.draw.rect(
-            screen,
-            (70, 70, 70),
-            (bar_x, bar_y, bar_width, bar_height),
-        )
-
-        pygame.draw.rect(
-            screen,
-            (220, 50, 50),
-            (bar_x, bar_y, bar_width * health_percentage, bar_height),
-        )

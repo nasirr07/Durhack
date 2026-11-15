@@ -15,6 +15,73 @@ PALETTE = {
 }
 
 
+class BossHealthBar:
+    HEIGHT = 18
+    MAX_WIDTH = 680
+    SIDE_MARGIN = 64
+    BOTTOM_MARGIN = 28
+    DAMAGE_TRAIL_SPEED = 0.8
+
+    def __init__(self, screen_size, font):
+        self.width, self.height = screen_size
+        self.font = font
+        bar_width = min(self.MAX_WIDTH, self.width - 2 * self.SIDE_MARGIN)
+        top = self.height - self.BOTTOM_MARGIN - self.HEIGHT
+        self.rect = pygame.Rect(
+            (self.width - bar_width) // 2,
+            top,
+            bar_width,
+            self.HEIGHT,
+        )
+        self.health_ratio = 1.0
+        self.delayed_ratio = 1.0
+        self._boss = None
+
+    def update(self, dt, boss):
+        max_health = max(1.0, float(getattr(boss, "max_health", 1)))
+        health = max(0.0, min(max_health, float(getattr(boss, "health", 0))))
+        target = health / max_health
+
+        if boss is not self._boss:
+            self.delayed_ratio = target
+            self._boss = boss
+
+        self.health_ratio = target
+        if self.delayed_ratio < target:
+            self.delayed_ratio = target
+        else:
+            self.delayed_ratio = max(
+                target,
+                self.delayed_ratio - self.DAMAGE_TRAIL_SPEED * max(0.0, dt),
+            )
+
+    def draw(self, screen):
+        border = 4
+        inner = self.rect.inflate(-border * 2, -border * 2)
+
+        label = self.font.render("BOSS", False, PALETTE["cream"])
+        screen.blit(
+            label,
+            label.get_rect(midbottom=(self.rect.centerx, self.rect.top - 5)),
+        )
+
+        pygame.draw.rect(screen, PALETTE["shadow"], self.rect)
+        pygame.draw.rect(screen, PALETTE["cream"], self.rect, border)
+
+        pygame.draw.rect(screen, PALETTE["panel"], inner)
+        delayed_width = round(inner.width * self.delayed_ratio)
+        if delayed_width > 0:
+            delayed_rect = inner.copy()
+            delayed_rect.width = delayed_width
+            pygame.draw.rect(screen, PALETTE["ember"], delayed_rect)
+
+        main_width = round(inner.width * self.health_ratio)
+        if main_width > 0:
+            main_rect = inner.copy()
+            main_rect.width = main_width
+            pygame.draw.rect(screen, (235, 70, 65), main_rect)
+
+
 class PixelUI:
     def __init__(self, screen_size, assets_dir):
         self.width, self.height = screen_size
