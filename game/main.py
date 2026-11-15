@@ -483,11 +483,14 @@ def build_floor_surface(width, height):
     return floor.convert_alpha()
 
 
-def draw_health(screen, player, font):
+def draw_health(screen, player):
+    weather_assets = Animator.ASSETS.get("Weather", {})
+    full_heart = weather_assets["heart"]
+    empty_heart = weather_assets["empty_heart"]
+
     for index in range(player.max_health):
-        colour = PALETTE["ember"] if index < player.health else PALETTE["panel_light"]
-        heart = font.render("♥", False, colour)
-        screen.blit(heart, (24 + index * 34, 64))
+        sprite = full_heart if index < player.health else empty_heart
+        screen.blit(sprite, (24 + index * (sprite.get_width() + 8), 80))
 
 
 def draw_gameplay(screen, session, background_surface, floor_surface, font, serial_data):
@@ -504,7 +507,7 @@ def draw_gameplay(screen, session, background_surface, floor_surface, font, seri
     session.boss.draw(world)
     session.hazard.draw(world)
     screen.blit(world, (shake_x, shake_y))
-    draw_health(screen, session.player, font)
+    draw_health(screen, session.player)
 
     instructions = font.render(
         "A/D move   Space jump   Shift dash   J strike   Esc quit",
@@ -552,6 +555,11 @@ def main():
     background_surface = build_background_surface(width, floor_y)
     floor_surface = build_floor_surface(width, floor_height)
     weather_assets = Animator.ASSETS.get("Weather", {})
+    heart_size = (32, 32)
+    weather_assets["heart"] = pygame.transform.scale(weather_assets["heart"], heart_size)
+    weather_assets["empty_heart"] = pygame.transform.scale(weather_assets["empty_heart"], heart_size)
+    
+
     weather = WeatherSystem(
         width,
         floor_y,
