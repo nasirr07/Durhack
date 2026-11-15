@@ -44,6 +44,16 @@ def check_collision(rect_a, rect_b):
     return rect_a.colliderect(rect_b)
 
 
+def check_mask_collision(rect_a, mask_a, rect_b, mask_b):
+    """Check pixel-accurate overlap between two masks positioned at rect_a and rect_b."""
+    if rect_a is None or rect_b is None or mask_a is None or mask_b is None:
+        return False
+    if not rect_a.colliderect(rect_b):
+        return False
+    offset = (rect_b.x - rect_a.x, rect_b.y - rect_a.y)
+    return mask_a.overlap(mask_b, offset) is not None
+
+
 def resolve_player_boss_collision(
     player,
     boss,
@@ -57,6 +67,14 @@ def resolve_player_boss_collision(
         player.boss_contact_active = False
         player.boss_collision_started = False
         return False
+
+    player_mask = getattr(player, "body_mask", None)
+    boss_mask = getattr(boss, "body_mask", None)
+    if player_mask is not None and boss_mask is not None:
+        if not check_mask_collision(player_rect, player_mask, boss_rect, boss_mask):
+            player.boss_contact_active = False
+            player.boss_collision_started = False
+            return False
 
     player.boss_collision_started = not player.boss_contact_active
     player.boss_contact_active = True

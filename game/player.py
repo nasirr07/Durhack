@@ -89,6 +89,27 @@ class Player:
             self.height
         )
 
+    @property
+    def body_mask(self):
+        """pygame.mask.Mask for the player's 60x60 body hitbox."""
+        return pygame.mask.Mask((self.width, self.height), fill=True)
+
+    @property
+    def mask(self):
+        """pygame.mask.Mask from the current animated player sprite (or body fallback)."""
+        frame = self.animator.get_current_frame() if self.animator is not None else None
+        if frame is not None:
+            return pygame.mask.from_surface(frame)
+        return self.body_mask
+
+    @property
+    def attack_mask(self):
+        """pygame.mask.Mask for the player's active attack hitbox."""
+        atk = self.attack_rect
+        if atk is None:
+            return None
+        return pygame.mask.Mask((atk.width, atk.height), fill=True)
+
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
 

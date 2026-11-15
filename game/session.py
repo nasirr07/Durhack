@@ -13,10 +13,10 @@ class GameplaySession:
         self.reset()
 
     def reset(self):
-        self.player = Player(150, self.floor_y - 48)
+        self.player = Player(150, self.floor_y - 60)
         self.boss = Boss(
-            self.screen_width - 400,
-            self.floor_y - 300,
+            self.screen_width - 280,
+            self.floor_y - 283,
         )
         self.combat = CombatSystem()
         self.hazard = EarthquakeHazard(self.screen_width, self.floor_y)
@@ -26,7 +26,7 @@ class GameplaySession:
 
     def update(self, dt, keys, direction="none", temperature=None):
         self.player.update(dt, keys, self.screen_width, self.floor_y)
-        self.boss.update(dt, self.floor_y)
+        self.boss.update(dt, self.floor_y, self.player)
 
         if resolve_player_boss_collision(
             self.player,
