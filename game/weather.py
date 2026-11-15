@@ -20,6 +20,54 @@ class Cloud:
         if self.x + self.width < 0:
             self.x = screen_width
 
+@dataclass
+class GroundFire:
+    x: float
+    height: float
+    speed: float
+    phase: float
+
+    def update(self, dt):
+        self.phase += self.speed * dt
+
+    def draw(self, screen, ground_y):
+        flicker = abs(math.sin(self.phase))
+
+        flame_height = self.height * (0.6 + flicker * 0.4)
+
+        # Outer flame
+        pygame.draw.polygon(
+            screen,
+            (190, 35, 10),
+            [
+                (self.x - 12, ground_y),
+                (self.x, ground_y - flame_height),
+                (self.x + 12, ground_y),
+            ]
+        )
+
+        # Inner flame
+        pygame.draw.polygon(
+            screen,
+            (255, 100, 10),
+            [
+                (self.x - 7, ground_y),
+                (self.x, ground_y - flame_height * 0.7),
+                (self.x + 7, ground_y),
+            ]
+        )
+
+        # Bright centre
+        pygame.draw.polygon(
+            screen,
+            (255, 210, 50),
+            [
+                (self.x - 3, ground_y),
+                (self.x, ground_y - flame_height * 0.35),
+                (self.x + 3, ground_y),
+            ]
+        )
+
 
 class WeatherSystem:
     HOT_THRESHOLD = 25.0
@@ -32,6 +80,18 @@ class WeatherSystem:
     WIND_MAX_DURATION = 4.0
 
     WIND_STRENGTH = 350.0
+
+    FIRE_THRESHOLD = 31.0
+    FIRE_FADE_SPEED = 0.5
+
+    @staticmethod
+    def _is_fire_temperature(temperature):
+        try:
+            value = float(temperature)
+        except (TypeError, ValueError):
+            return False
+
+        return math.isfinite(value) and value >= WeatherSystem.FIRE_THRESHOLD
 
     def __init__(self, width, height, sun=None, seed=None, wind_sound = None):
         self.width = width
@@ -53,6 +113,19 @@ class WeatherSystem:
             self.WIND_MIN_INTERVAL,
             self.WIND_MAX_INTERVAL
         )
+
+        self.ground_fires = []
+        self.fire_intensity = 0.0
+
+        for x in range(0, self.width, 30):
+            self.ground_fires.append(
+                GroundFire(
+                    x=float(x),
+                    height=self.random.randint(25, 65),
+                    speed=self.random.uniform(3.0, 7.0),
+                    phase=self.random.uniform(0, math.pi * 2)
+                )
+            )
 
     def update(self, dt, temperature):
         dt = max(0.0, dt)
@@ -100,6 +173,27 @@ class WeatherSystem:
                 if self.wind_sound is not None:
                     print("WIND GUST STARTED!")
                     self.wind_sound.play(fade_ms=1500)
+        target_fire = (
+            1.0
+            if self._is_fire_temperature(temperature)
+            else 0.0
+        )
+
+        if self.fire_intensity < target_fire:
+            self.fire_intensity = min(
+                target_fire,
+                self.fire_intensity + self.FIRE_FADE_SPEED * dt
+            )
+
+        elif self.fire_intensity > target_fire:
+            self.fire_intensity = max(
+                target_fire,
+                self.fire_intensity - self.FIRE_FADE_SPEED * dt
+            )
+
+        if self.fire_intensity > 0:
+            for fire in self.ground_fires:
+                fire.update(dt)
 
     def draw(self, screen):
         cloud_alpha = round(255 * (1.0 - self.hot_intensity))
@@ -117,6 +211,19 @@ class WeatherSystem:
                     max(24, self.height // 18),
                 ),
             )
+
+                # Draw ground fire
+        if self.fire_intensity > 0:
+            fire_surface = pygame.Surface(
+                (self.width, self.height),
+                pygame.SRCALPHA
+            )
+
+            for fire in self.ground_fires:
+                fire.draw(fire_surface, self.height)
+
+            fire_surface.set_alpha(round(255 * self.fire_intensity))
+            screen.blit(fire_surface, (0, 0))
 
     def _create_clouds(self):
         layout = (
