@@ -4,8 +4,8 @@
 - data reader DONE
 - Make receiver DONE
 
-- Game environment
-- Player control
+- Game environment DONE
+- Player control DONE
 - Dynamic enemy ai using microbit data
 - Dynamic environment from microbit data
 - Home screen
