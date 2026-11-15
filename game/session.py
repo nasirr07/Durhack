@@ -15,10 +15,10 @@ class GameplaySession:
 
     def reset(self):
         self.player = Player(150, self.floor_y - 48, audio=self.audio)
-        self.player = Player(150, self.floor_y - 60)
         self.boss = Boss(
             self.screen_width - 330,
             self.floor_y - 389,
+            audio=self.audio,
         )
         self.combat = CombatSystem()
         self.hazard = EarthquakeHazard(self.screen_width, self.floor_y)

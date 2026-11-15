@@ -486,7 +486,7 @@ def load_boss_animations(path):
 
 
 class Boss:
-    def __init__(self, x, y):
+    def __init__(self, x, y, audio=None):
         self.x = float(x)
         self.y = float(y)
 
@@ -516,6 +516,7 @@ class Boss:
 
         # Facing direction: -1 = left (default sprite orientation), 1 = right
         self.facing = -1
+        self.audio = audio
 
         self.current_animation = "row_1"
         self.animation_index = 0
@@ -537,6 +538,7 @@ class Boss:
         self.attack_cooldown_duration = 2.0
         self.attack_id = 0
         self.last_hit_attack_id = -1
+        self.attack_hit = False
 
         # Ranged fireball (temperature > 26 C) & sky-drop heat wave state
         self.fireballs = []
@@ -631,7 +633,10 @@ class Boss:
         self.animation_index = 0
         self.animation_timer = 0.0
         self.attack_id += 1
+        self.attack_hit = False
         self.attack_cooldown = self.attack_cooldown_duration
+        if self.audio is not None:
+            self.audio.play("boss_attack")
         self._sync_image()
 
     def shoot_fireball(self, target_x=None, target_y=None):
@@ -721,6 +726,7 @@ class Boss:
         offset = (player_rect.x - atk_rect.x, player_rect.y - atk_rect.y)
         if atk_mask.overlap(player_mask, offset) is not None:
             self.last_hit_attack_id = self.attack_id
+            self.attack_hit = True
             return True
 
         return False
@@ -750,6 +756,12 @@ class Boss:
                     self.animation_index = len(frames) - 1
                 elif self.current_animation in ("row_3", "row_4"):
                     # Return to idle and start the post-attack cooldown pause
+                    if (
+                        self.current_animation == "row_3"
+                        and not self.attack_hit
+                        and self.audio is not None
+                    ):
+                        self.audio.play("boss_miss")
                     self.current_animation = "row_1"
                     self.animation_index = 0
                     self.attack_cooldown = self.attack_cooldown_duration
