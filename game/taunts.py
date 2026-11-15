@@ -1,6 +1,8 @@
+import json
 import os
 import random
 import threading
+import urllib.request
 import pygame
 
 from ui import PALETTE
@@ -59,8 +61,9 @@ FALLBACK_TAUNTS = {
         "THE DARKNESS FALLS AT {light} LIGHT... MY BLADE STILL SEES YOU!",
     ],
     "tilt": [
-        "TILTING THE WORLD {dir}?! LET THE EARTHQUAKE SHATTER YOUR FEET!",
-        "THE GROUND TREMBLES {dir}! TRY JUMPING NOW, LITTLE WARRIOR!",
+        "THE SCREEN RUMBLES! MY FALLING BOULDERS WILL CRUSH YOU!",
+        "SHAKING THE MICROBIT?! FEEL THE ARENA TREMBLE AND COLLAPSE!",
+        "EARTHQUAKE! WATCH THE CEILING CRUMBLE ABOVE YOUR HEAD!",
     ],
     "laser": [
         "COWARD AT RANGE! MY ORANGE INCANTATION LASER WILL PIERCE YOU!",
@@ -102,22 +105,32 @@ class BossTauntBox:
         )
 
         self._client = None
-        api_key = _resolve_api_key()
-        if genai is not None and api_key:
+        self._rest_model = None
+        self.api_key = _resolve_api_key()
+        if genai is not None and self.api_key:
             try:
-                self._client = genai.Client(api_key=api_key)
+                self._client = genai.Client(api_key=self.api_key)
             except Exception:
                 self._client = None
 
+        if self.api_key:
+            print("[BossTauntBox] Gemini API key loaded successfully.")
+        else:
+            print("[BossTauntBox] No GEMINI_API_KEY found (.env or taunts.py) - using fallback taunts.")
+
         self._lock = threading.Lock()
         self._pending_text = None
+        self._pending_source = "FALLBACK"
         self._request_in_flight = False
+        self.source = "FALLBACK"
         self.reset()
 
     def reset(self):
         with self._lock:
             self._pending_text = None
+            self._pending_source = "FALLBACK"
         self.full_text = ""
+        self.source = "FALLBACK"
         self.visible_chars = 0.0
         self.last_blip_char = 0
         self.hold_timer = 0.0
@@ -126,48 +139,150 @@ class BossTauntBox:
         self._seen_intro = False
         self._was_hot = False
         self._was_dark = False
+        self._was_rumbling = False
         self._was_boss_low = False
         self._was_player_low = False
+
+    def _resolve_rest_model(self):
+        if self._rest_model:
+            return self._rest_model
+
+        list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={self.api_key}"
+        req = urllib.request.Request(list_url, method="GET")
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        available = []
+        for m in data.get("models", []):
+            methods = m.get("supportedGenerationMethods", [])
+            name = m.get("name", "")  # e.g. "models/gemini-..."
+            if "generateContent" in methods and name.startswith("models/"):
+                short = name.split("/", 1)[1]
+                if "tts" not in short and "image" not in short and "embedding" not in short:
+                    available.append(short)
+
+        # Prefer fast flash-lite / flash / hydrogen models
+        preferred_substrings = (
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-4-hydrogen",
+            "flash-lite",
+            "flash",
+            "gemini",
+        )
+        for pref in preferred_substrings:
+            for model_name in available:
+                if pref in model_name:
+                    self._rest_model = model_name
+                    print(f"[BossTauntBox] Using Gemini model: {self._rest_model}")
+                    return self._rest_model
+
+        if available:
+            self._rest_model = available[0]
+            print(f"[BossTauntBox] Using Gemini model: {self._rest_model}")
+            return self._rest_model
+
+        self._rest_model = "gemini-3.5-flash-lite"
+        return self._rest_model
+
+    def _call_gemini(self, prompt):
+        """Call Gemini via google-genai SDK if installed, or direct HTTPS REST with stdlib urllib."""
+        if self._client is not None:
+            interaction = self._client.interactions.create(
+                model="gemini-3.5-flash-lite",
+                system_instruction=SYSTEM_INSTRUCTION,
+                input=prompt,
+            )
+            if getattr(interaction, "output_text", None):
+                return interaction.output_text
+
+        model_name = self._resolve_rest_model()
+        url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model_name}:generateContent?key={self.api_key}"
+        )
+        payload = {
+            "contents": [
+                {
+                    "role": "user",
+                    "parts": [{"text": f"{SYSTEM_INSTRUCTION}\n\n{prompt}"}],
+                }
+            ],
+            "generationConfig": {
+                "maxOutputTokens": 200,
+                "temperature": 0.9,
+            },
+        }
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=6.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            candidates = data.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                for part in parts:
+                    if not part.get("thought") and part.get("text"):
+                        return part["text"]
+        return None
 
     def trigger_taunt(self, category, context):
         """Queue a Gemini API taunt request in a background thread (with instant fallback support)."""
         if self._request_in_flight:
             return
 
+        # Re-check key in case .env was edited before gameplay started
+        if not self.api_key:
+            self.api_key = _resolve_api_key()
+
         fallback = self._format_fallback(category, context)
-        if self._client is None:
-            self._start_display(fallback)
+        if not self.api_key:
+            print(f"[Taunt | FALLBACK] {fallback} (no GEMINI_API_KEY set)")
+            self._start_display(fallback, source="FALLBACK")
             return
 
         self._request_in_flight = True
+        event_desc = (
+            "EARTHQUAKE RUMBLE! The screen is violently shaking and boulders are falling from the ceiling because the player shook/tilted the micro:bit"
+            if category == "tilt"
+            else category
+        )
         prompt = (
-            f"Event: {category}. "
+            f"Event: {event_desc}. "
             f"Room temperature: {context.get('temp')}C, "
             f"Light sensor: {context.get('light')}/255, "
             f"Tilt direction: {context.get('dir')}, "
+            f"Screen rumbling: {context.get('rumbling', False)}, "
             f"Boss HP: {context.get('boss_hp')}/{context.get('boss_max_hp')}, "
             f"Player HP: {context.get('player_hp')}/{context.get('player_max_hp')}. "
-            "Generate a single short boss taunt line in ALL CAPS."
+            "Generate a single short boss taunt line in ALL CAPS reacting to this event."
         )
 
         def worker():
             text = fallback
+            source = "FALLBACK"
             try:
-                interaction = self._client.interactions.create(
-                    model="gemini-3.5-flash-lite",
-                    system_instruction=SYSTEM_INSTRUCTION,
-                    input=prompt,
-                )
-                if getattr(interaction, "output_text", None):
-                    cleaned = " ".join(interaction.output_text.strip().split()).upper()
+                raw_output = self._call_gemini(prompt)
+                if raw_output:
+                    cleaned = " ".join(raw_output.strip().split()).upper()
                     cleaned = cleaned.strip("\"'")
                     if cleaned:
                         text = cleaned[:115]
-            except Exception:
+                        source = "GEMINI AI"
+                        print(f"[Taunt | GEMINI AI] {text}")
+                else:
+                    print(f"[Taunt | FALLBACK] {fallback} (empty Gemini response)")
+            except Exception as exc:
+                print(f"[Taunt | FALLBACK] {fallback} (Gemini error: {exc})")
                 text = fallback
+                source = "FALLBACK"
             finally:
                 with self._lock:
                     self._pending_text = text
+                    self._pending_source = source
                     self._request_in_flight = False
 
         threading.Thread(target=worker, daemon=True).start()
@@ -184,8 +299,9 @@ class BossTauntBox:
             player_hp=context.get("player_hp", 1),
         )
 
-    def _start_display(self, text):
+    def _start_display(self, text, source="FALLBACK"):
         self.full_text = text.upper()
+        self.source = source
         self.visible_chars = 0.0
         self.last_blip_char = 0
         self.hold_timer = self.HOLD_DURATION
@@ -195,8 +311,37 @@ class BossTauntBox:
     def update(self, dt, session, serial_data):
         with self._lock:
             if self._pending_text is not None:
-                self._start_display(self._pending_text)
+                self._start_display(self._pending_text, source=self._pending_source)
                 self._pending_text = None
+
+        temp = serial_data.get("temp")
+        light = serial_data.get("light")
+        direction = serial_data.get("dir", "none")
+        boss = session.boss
+        player = session.player
+        hazard = getattr(session, "hazard", None)
+        phase_val = getattr(getattr(hazard, "phase", None), "value", "idle")
+        is_rumbling = phase_val in ("warning", "boulders") or (
+            getattr(hazard, "shake_offset", (0, 0)) != (0, 0)
+        )
+
+        context = {
+            "temp": temp,
+            "light": light,
+            "dir": direction,
+            "rumbling": is_rumbling,
+            "boss_hp": boss.health,
+            "boss_max_hp": boss.max_health,
+            "player_hp": player.health,
+            "player_max_hp": player.max_health,
+        }
+
+        # Immediately react as soon as screen rumbling / earthquake starts (even if cooldown is active)
+        if is_rumbling and not self._was_rumbling:
+            self._was_rumbling = True
+            self.trigger_taunt("tilt", context)
+        elif not is_rumbling:
+            self._was_rumbling = False
 
         if self.active:
             total_len = len(self.full_text)
@@ -222,22 +367,6 @@ class BossTauntBox:
         self.cooldown = max(0.0, self.cooldown - dt)
         if self.cooldown > 0 or self._request_in_flight:
             return
-
-        temp = serial_data.get("temp")
-        light = serial_data.get("light")
-        direction = serial_data.get("dir", "none")
-        boss = session.boss
-        player = session.player
-
-        context = {
-            "temp": temp,
-            "light": light,
-            "dir": direction,
-            "boss_hp": boss.health,
-            "boss_max_hp": boss.max_health,
-            "player_hp": player.health,
-            "player_max_hp": player.max_health,
-        }
 
         is_hot = False
         try:
@@ -307,11 +436,15 @@ class BossTauntBox:
         inner_border = self.rect.inflate(-12, -12)
         pygame.draw.rect(screen, PALETTE["panel_light"], inner_border, 2)
 
-        # Speaker nameplate tab at top-left of the Pokemon box
-        tag_rect = pygame.Rect(self.rect.left + 20, self.rect.top - 14, 130, 24)
+        # Speaker nameplate tab at top-left of the Pokemon box (shows GEMINI AI vs FALLBACK)
+        is_gemini = self.source == "GEMINI AI"
+        badge_colour = PALETTE["wind"] if is_gemini else PALETTE["ember"]
+        badge_text = "BOSS [GEMINI AI]" if is_gemini else "BOSS [FALLBACK]"
+        tag_label = self.small_font.render(badge_text, False, badge_colour)
+        tag_width = max(140, tag_label.get_width() + 24)
+        tag_rect = pygame.Rect(self.rect.left + 20, self.rect.top - 14, tag_width, 24)
         pygame.draw.rect(screen, PALETTE["panel"], tag_rect)
-        pygame.draw.rect(screen, PALETTE["ember"], tag_rect, 2)
-        tag_label = self.small_font.render("BOSS", False, PALETTE["ember"])
+        pygame.draw.rect(screen, badge_colour, tag_rect, 2)
         screen.blit(tag_label, tag_label.get_rect(center=tag_rect.center))
 
         # Slice revealed text and wrap across 2 lines
