@@ -191,7 +191,7 @@ class LaserIncantation:
         origin_x,
         y,
         facing=-1,
-        incantation_duration=1.1,
+        incantation_duration=1.8,
         beam_duration=0.65,
         beam_height=44,
         arena_width=2400,
@@ -284,16 +284,8 @@ class LaserIncantation:
         if not self.active:
             return
 
-        # 1. Draw pixel-art orange telegraph line during incantation or full laser beam once incantation completes
-        if not self.firing:
-            progress = min(1.0, max(0.0, self.age / max(0.01, self.incantation_duration)))
-            line_alpha = round(170 * progress)
-            telegraph = pygame.Surface((self.beam_width, 8), pygame.SRCALPHA)
-            for dx in range(0, self.beam_width, 16):
-                pygame.draw.rect(telegraph, (255, 145, 25, line_alpha), (dx, 0, 10, 8))
-                pygame.draw.rect(telegraph, (255, 230, 120, line_alpha), (dx, 2, 10, 4))
-            screen.blit(telegraph, (self.beam_x, round(self.y - 4)))
-        else:
+        # 1. Draw full laser beam once incantation completes (no preview line during charge-up)
+        if self.firing:
             beam_age = self.age - self.incantation_duration
             remain_ratio = 1.0 - (beam_age / max(0.01, self.beam_duration))
             beam_copy = self.beam_surface.copy()
