@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import math
 import random
-
 import pygame
 
 
@@ -26,7 +25,15 @@ class WeatherSystem:
     HOT_THRESHOLD = 25.0
     TRANSITION_SPEED = 1.5
 
-    def __init__(self, width, height, sun=None, seed=None):
+    WIND_MIN_INTERVAL = 10.0
+    WIND_MAX_INTERVAL = 25.0
+
+    WIND_MIN_DURATION = 2.0
+    WIND_MAX_DURATION = 4.0
+
+    WIND_STRENGTH = 350.0
+
+    def __init__(self, width, height, sun=None, seed=None, wind_sound = None):
         self.width = width
         self.height = height
         self.random = random.Random(seed)
@@ -34,6 +41,18 @@ class WeatherSystem:
         self.hot_intensity = 0.0
         self.clouds = self._create_clouds()
         self.sun = self._prepare_sun(sun)
+
+        self.wind_sound = wind_sound
+        self.wind_active = False
+        self.wind_timer = 0.0
+        self.wind_duration = 0.0
+        self.wind_direction = 0
+        self.wind_force = 0.0
+
+        self.next_wind = self.random.uniform(
+            self.WIND_MIN_INTERVAL,
+            self.WIND_MAX_INTERVAL
+        )
 
     def update(self, dt, temperature):
         dt = max(0.0, dt)
@@ -47,6 +66,40 @@ class WeatherSystem:
 
         for cloud in self.clouds:
             cloud.update(dt, self.width)
+
+        if self.wind_active:
+            self.wind_timer += dt
+
+            if self.wind_timer >= self.wind_duration:
+                self.wind_active = False
+                self.wind_force = 0.0
+
+                self.next_wind = self.random.uniform(
+                    self.WIND_MIN_INTERVAL,
+                    self.WIND_MAX_INTERVAL
+                )
+
+        else:
+            self.next_wind -= dt
+
+            if self.next_wind <= 0:
+                self.wind_active = True
+                self.wind_timer = 0.0
+
+                self.wind_duration = self.random.uniform(
+                    self.WIND_MIN_DURATION,
+                    self.WIND_MAX_DURATION
+                )
+
+                self.wind_direction = self.random.choice([-1, 1])
+
+                self.wind_force = (
+                    self.wind_direction * self.WIND_STRENGTH
+                )
+
+                if self.wind_sound is not None:
+                    print("WIND GUST STARTED!")
+                    self.wind_sound.play(fade_ms=1500)
 
     def draw(self, screen):
         cloud_alpha = round(255 * (1.0 - self.hot_intensity))
