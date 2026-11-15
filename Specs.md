@@ -7,7 +7,7 @@
 - Game environment DONE
 - Player control DONE
 - Dynamic enemy ai using microbit data DONE
-- Dynamic environment from microbit data
-- Home screen
-- Score 
- - Game music 
+- Dynamic environment from microbit data DONE
+- Home screen DONE
+- Score DONE
+ - Game music DONE
