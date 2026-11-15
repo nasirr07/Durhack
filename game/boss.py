@@ -539,6 +539,7 @@ class Boss:
         self.attack_id = 0
         self.last_hit_attack_id = -1
         self.attack_hit = False
+        self.attack_hit = False
 
         # Ranged fireball (temperature > 26 C) & sky-drop heat wave state
         self.fireballs = []

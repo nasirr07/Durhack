@@ -1,13 +1,15 @@
+import math
 import pygame
 
 
 class DarknessSystem:
-    """Applies a smooth, player-centred visibility mask to gameplay."""
+    """Applies a smooth darkness overlay scaled directly from the micro:bit light value (0..255)."""
 
     DARKNESS_ALPHA = 220
     ENTITY_ALPHA = 115
     TRANSITION_SPEED = 4.0
     VISIBILITY_RADIUS = 135
+    MAX_LIGHT_VALUE = 255.0
 
     def __init__(
         self,
@@ -25,7 +27,7 @@ class DarknessSystem:
         self._entity_surface = pygame.Surface(self.size, pygame.SRCALPHA)
 
     def update(self, dt, light_value):
-        target = 1.0 if self._is_dark(light_value) else 0.0
+        target = self._darkness_from_light(light_value)
         step = self.TRANSITION_SPEED * max(0.0, dt)
         difference = target - self.intensity
         if abs(difference) <= step:
@@ -40,7 +42,7 @@ class DarknessSystem:
         draw_entities=None,
         entity_offset=(0, 0),
     ):
-        """Darken the scene and optionally redraw dim entities above the mask."""
+        """Darken the scene based on the micro:bit light reading and keep a player visibility radius."""
         if self.intensity <= 0:
             return
 
@@ -76,9 +78,14 @@ class DarknessSystem:
         screen.blit(self._entity_surface, entity_offset)
         self._entity_surface.set_alpha(None)
 
-    @staticmethod
-    def _is_dark(light_value):
+    @classmethod
+    def _darkness_from_light(cls, light_value):
+        """Convert micro:bit light level (0=dark .. 255=bright) directly into darkness intensity (1.0 .. 0.0)."""
         try:
-            return float(light_value) == 0.0
+            value = float(light_value)
         except (TypeError, ValueError):
-            return False
+            return 0.0
+        if not math.isfinite(value):
+            return 0.0
+        clamped = max(0.0, min(cls.MAX_LIGHT_VALUE, value))
+        return (cls.MAX_LIGHT_VALUE - clamped) / cls.MAX_LIGHT_VALUE
