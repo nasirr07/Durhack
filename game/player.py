@@ -73,6 +73,7 @@ class Player:
         self.grounded = False
         self.coyote_time = 0.0
         self.jump_buffer = 0.0
+        self.airborne_from_jump = False
         self.boss_collision_direction = 0
         self.boss_collision_started = False
         self.boss_contact_active = False
@@ -151,8 +152,6 @@ class Player:
             self.attack_cooldown = self.attack_cooldown_duration
             self.attack_id += 1
             self.attack_hit = False
-            if self.audio is not None:
-                self.audio.play("player_attack")
 
         self.attack_requested = False
 
@@ -219,6 +218,7 @@ class Player:
         if can_ground_jump or can_air_jump:
             self.velocity_y = self.jump_strength
             self.grounded = False
+            self.airborne_from_jump = True
             self.coyote_time = 0
             self.jump_buffer = 0
             self.jumps_remaining -= 1
@@ -239,11 +239,20 @@ class Player:
         self.y += self.velocity_y * dt
 
         # Resolve collisions
+        was_grounded = self.grounded
         resolve_player_collisions(
             self,
             screen_width,
             floor_y
         )
+        if (
+            not was_grounded
+            and self.grounded
+            and self.airborne_from_jump
+        ):
+            if self.audio is not None:
+                self.audio.play("walking")
+            self.airborne_from_jump = False
 
         # Update animation state and frame
         if self.animator is not None:

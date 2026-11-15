@@ -63,5 +63,6 @@ class CombatSystem:
         if hit:
             boss.take_damage(player.attack_damage)
             player.attack_hit = True
-            self.last_hit_attack_id = player.attack_id
+            if player.audio is not None:
+                player.audio.play("player_attack_hit")
             self.last_hit_attack_id = player.attack_id

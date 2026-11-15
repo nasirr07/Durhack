@@ -7,11 +7,12 @@ class GameAudio:
     """Small, optional audio wrapper for one-shot effects and gameplay music."""
 
     SOUND_FILES = {
-        "player_attack": "boss_hit_sword.mp3",
+        "player_attack_hit": "player_attack_hit.mp3",
         "player_miss": "player_attack_miss.mp3",
-        "boss_attack": None,
+        "boss_attack": "boss_hit_sword.mp3",
         "boss_miss": "boss_miss_sword.mp3",
         "dash": "dash.mp3",
+        "walking": "Walking.mp3",
     }
 
     def __init__(self, sound_directory=None):
