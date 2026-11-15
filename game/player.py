@@ -237,14 +237,6 @@ class Player:
                 colour,
                 self.rect
             )
-        # Draw light attack
-        if self.attack_rect is not None:
-            pygame.draw.rect(
-                screen,
-                (255, 220, 100),
-                self.attack_rect,
-                2
-            )
 
     def take_damage(self, damage=1, knockback_direction=0):
         if self.damage_cooldown > 0:
