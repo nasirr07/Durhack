@@ -426,6 +426,7 @@ from screen_flow import ScreenController, ScreenState
 from session import GameplaySession
 from spritesheet import SpriteSheet
 from ui import PALETTE, PixelUI
+from weather import WeatherSystem
 
 
 BACKGROUND = (25, 25, 30)
@@ -442,7 +443,7 @@ def get_all_assets(assets_dir, sheet_cutter):
             full_path = os.path.join(directory_path, entry)
             if os.path.isdir(full_path):
                 folder_dict[entry] = load_directory(full_path)
-            elif entry.lower().endswith((".png", ".jpg", ".jpeg", ".bmp")):
+            elif entry.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".webp")):
                 stem = os.path.splitext(entry)[0]
                 if stem.endswith("_spritesheet"):
                     folder_dict[stem.removesuffix("_spritesheet")] = (
@@ -496,6 +497,8 @@ def draw_gameplay(screen, session, background_surface, floor_surface, font, seri
         floor_surface,
         (shake_x, screen.get_height() - floor_surface.get_height() + shake_y),
     )
+    if session.weather is not None:
+        session.weather.draw(screen)
     world = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
     session.player.draw(world)
     session.boss.draw(world)
@@ -530,6 +533,12 @@ def main():
     Animator.ASSETS = get_all_assets(ASSETS_DIR, SpriteSheet())
     background_surface = build_background_surface(width, floor_y)
     floor_surface = build_floor_surface(width, floor_height)
+    weather_assets = Animator.ASSETS.get("Weather", {})
+    weather = WeatherSystem(
+        width,
+        floor_y,
+        weather_assets.get("PixelatedSun"),
+    )
 
     ui = PixelUI((width, height), ASSETS_DIR)
     hud_font = pygame.font.Font(
@@ -538,7 +547,7 @@ def main():
     )
     serial_reader = SerialReader()
     serial_reader.Start()
-    session = GameplaySession(width, floor_y)
+    session = GameplaySession(width, floor_y, weather)
     controller = ScreenController()
     running = True
 
@@ -576,7 +585,12 @@ def main():
 
             if running:
                 serial_data = serial_reader.GetSerialData()
-                session.update(dt, keys, serial_data["dir"])
+                session.update(
+                    dt,
+                    keys,
+                    serial_data["dir"],
+                    serial_data.get("temp"),
+                )
                 draw_gameplay(
                     screen,
                     session,

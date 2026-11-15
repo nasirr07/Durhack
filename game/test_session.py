@@ -29,6 +29,18 @@ class GameplaySessionTests(unittest.TestCase):
         self.assertEqual(self.session.boss.health, self.session.boss.max_health)
         self.assertEqual(self.session.combat.last_hit_attack_id, -1)
 
+    def test_update_passes_temperature_to_weather(self):
+        readings = []
+
+        class WeatherProbe:
+            def update(self, dt, temperature):
+                readings.append((dt, temperature))
+
+        session = GameplaySession(800, 600, WeatherProbe())
+        session.update(0.1, pygame.key.get_pressed(), "none", 26)
+
+        self.assertEqual(readings, [(0.1, 26)])
+
 
 if __name__ == "__main__":
     unittest.main()
