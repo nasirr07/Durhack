@@ -1,5 +1,58 @@
 import pygame
+def load_boss_animations(path):
+    sheet = pygame.image.load(path)
 
+    if pygame.display.get_surface() is not None:
+            sheet = sheet.convert_alpha()
+
+    frame_width = 93
+    frame_height = 54
+
+        # Animation rows: (starting Y position, number of frames)
+    row_info = {
+            "idle": (0, 6),
+            "row_2": (54, 12),
+            "row_3": (108, 15),
+            "row_4": (162, 5),
+            "row_5": (216, 22)
+        }
+
+    animations = {}
+
+    for name, (start_y, frame_count) in row_info.items():
+
+            frames = []
+
+            for i in range(frame_count):
+
+                frame = pygame.Surface(
+                    (frame_width, frame_height),
+                    pygame.SRCALPHA
+                )
+
+                available_height = min(
+                    frame_height,
+                    sheet.get_height() - start_y
+                )
+
+                frame.blit(
+                    sheet,
+                    (0, 0),
+                    pygame.Rect(
+                        i * frame_width,
+                        start_y,
+                        frame_width,
+                        available_height
+                    )
+                )
+
+                frame = pygame.transform.scale(frame, (300, 174))
+
+                frames.append(frame)
+
+            animations[name] = frames
+
+    return animations
 
 class Animator:
     ASSETS = {}
@@ -128,6 +181,9 @@ class Animator:
             else:
                 screen.blit(frame, pos_or_rect)
 
+
+
+
     # PascalCase aliases
     GetFrames = get_frames
     GetAsset = get_asset
@@ -135,3 +191,7 @@ class Animator:
     Update = update
     GetCurrentFrame = get_current_frame
     Draw = draw
+
+Animator.ASSETS["Boss"] = load_boss_animations(
+    "assets/boss/boss_spritesheet.png"
+)
