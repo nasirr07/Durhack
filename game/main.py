@@ -528,6 +528,18 @@ def main():
     pygame.display.set_caption("MicroRogue")
     clock = pygame.time.Clock()
 
+        # Load background soundtrack
+    pygame.mixer.music.load("assets/sound/soundtrack.wav")
+
+    # Set background volume (0.0 to 1.0)
+    pygame.mixer.music.set_volume(0.1)
+
+    # Start playing, looping forever, with a 3-second fade-in
+    pygame.mixer.music.play(
+        loops=-1,
+        fade_ms=3000
+)
+
     wind_sound = pygame.mixer.Sound("assets/Weather/wind_sound.wav")
     wind_sound.set_volume(0.5)
     print("Wind sound loaded successfully!")
@@ -633,6 +645,14 @@ def main():
                     controller.show_start_screen()
 
         pygame.display.flip()
+
+    # Fade out music over 3 seconds
+    pygame.mixer.music.fadeout(3000)
+
+    # Wait for the fade to finish
+    pygame.time.wait(3000)
+
+    pygame.quit()
 
     serial_reader.Stop()
     pygame.quit()
