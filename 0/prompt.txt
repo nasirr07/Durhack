@@ -1,0 +1,117 @@
+You know for microbits, do I have to use their online editor or can I just write a python file like locally and just use a provided library?
+
+---
+
+right I have installed microbit-stubs and microfs, what now, how can I code and send it
+
+---
+
+ok so main.py is needed always??
+
+---
+
+can you look into receiver/main.py im getting errors?
+
+---
+
+im getting display is not defined??
+
+---
+
+right im goign to need read the serial data from the microbit? how would I do that
+
+---
+
+amazing, so how is the microbit meant to send the data through serial?}
+
+---
+
+how can I send json data using print from the microbit to the serial reader?
+
+---
+
+im getting an error when im sending the serial data, can you look through it please
+
+---
+
+is the print statement in the main.py correct for the json format
+
+---
+
+is ufs already preinstalled with windows or no?
+
+---
+
+if I want to continuously read the serial data, would I need to put the read serial in a thread?
+
+---
+
+hmm, my thread isnt stopping, why?
+
+---
+
+I need to run pygame and I dont have it since im on the newest version of python which doesnt have pygame, I have 3.12 but I need to set it as the default python environment and also would need to install the microbit things again but for 3.12??
+
+---
+
+im getting an error, help pleae
+
+---
+
+but now its extremely slow, how can I fix this?
+
+---
+
+can you make me a new spritesheet class in the spritesheet.py file please, this one is old and I dont like how it works, make it not have to take a spritesheet as an initial thing and please if you can, import all of the spritesheets and assets in the get all assets function. The assets are in the assets folder, and the assets that are spritesheets are labelled _spritesheet, else they are just normal files, the spritesheet assets are meant to be 60x60px. Make the function return all assets sorted in a dictionary, make the keys and dicts similar to the file structure
+
+---
+
+got an error, fix it pls
+
+---
+
+also get rid of the _spritesheet name for the dictionary keys, just make the key name the bit before _spritesheet please
+
+---
+
+now can you please create me the animator class please
+
+---
+
+can you integrate this fully so it just works when I try it, so like change the player class to include the animator and stuff, and also add the background and stuff
+
+---
+
+the attack sprites are smaller than the normal sprites, can you fix that please
+
+---
+
+can you plase fix the hitbox for the boss and stuff and make his attacks also have hirboxes please, like you can use a mask to do this please, do it quick
+
+---
+
+can you not make the boss move please and can you make the boss bigger please
+
+---
+
+can you make the boss hav ea little cooldown between attacks and make the boss bigger please
+
+---
+
+can you please make a the boss have ranged attacks, and create me a fireball sprite only do that when the temperature reaches over 26 degrees
+
+---
+
+can you shoot like 5 fireballs at once, make them linger for a little bit and then fire each one towards the player sequentially. and please make the fireballs ossilate
+
+---
+
+can you possibly make the spawning of the fireballs nicer, like maybe fade them in and make like a heat wave where it drops from the sky and there is a gap in it where the player can stand in to not get hurt, also make the asset for it
+
+---
+
+can you make the heatwave thing come down even when the player is not near the boss, and also make the fireballs less frequent
+
+---
+
+the heat thing comes even if the temperature is less than 26 fix that please
