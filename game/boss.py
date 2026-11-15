@@ -786,20 +786,21 @@ class Boss:
             self.animate(dt)
             return
 
-        # Sky-drop heat wave comes down periodically regardless of player distance
-        if not self.heat_waves:
-            self.heat_wave_cooldown = max(0.0, self.heat_wave_cooldown - dt)
-            if self.heat_wave_cooldown <= 0:
-                self.spawn_heat_wave(arena_width=max(600, round(self.x + self.width)))
+        # Both the sky-drop heat wave and the 5-fireball volley only happen when temperature > 26 C,
+        # and neither requires the player to be near the boss
+        if _is_over_fireball_temp(temperature):
+            if not self.heat_waves:
+                self.heat_wave_cooldown = max(0.0, self.heat_wave_cooldown - dt)
+                if self.heat_wave_cooldown <= 0:
+                    self.spawn_heat_wave(arena_width=max(600, round(self.x + self.width)))
 
-        # Ranged 5-fireball volley only when temperature > 26 C (cooldown waits until current volley finishes)
-        if _is_over_fireball_temp(temperature) and not self.fireballs:
-            self.fireball_cooldown = max(0.0, self.fireball_cooldown - dt)
-            if self.fireball_cooldown <= 0:
-                if player is not None:
-                    self.shoot_fireball(player.rect.centerx, player.rect.centery)
-                else:
-                    self.shoot_fireball()
+            if not self.fireballs:
+                self.fireball_cooldown = max(0.0, self.fireball_cooldown - dt)
+                if self.fireball_cooldown <= 0:
+                    if player is not None:
+                        self.shoot_fireball(player.rect.centerx, player.rect.centery)
+                    else:
+                        self.shoot_fireball()
 
         # Stationary boss melee AI: never moves horizontally, cleaves when player is in range
         if player is not None:
