@@ -517,9 +517,8 @@ def draw_gameplay(
     session.boss.draw(world)
     session.hazard.draw(world)
     screen.blit(world, (shake_x, shake_y))
-<<<<<<< HEAD
+    
     draw_health(screen, session.player)
-=======
     if lighting is not None:
         lighting.apply(
             screen,
@@ -533,8 +532,6 @@ def draw_gameplay(
             ),
             entity_offset=(shake_x, shake_y),
         )
-    draw_health(screen, session.player, font)
->>>>>>> 7461136a4900799b5681542ccaaa869802b8f3c8
 
     instructions = font.render(
         "A/D move   Space jump   Shift dash   J strike   Esc quit",
