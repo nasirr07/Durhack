@@ -62,4 +62,6 @@ class CombatSystem:
 
         if hit:
             boss.take_damage(player.attack_damage)
+            player.attack_hit = True
+            self.last_hit_attack_id = player.attack_id
             self.last_hit_attack_id = player.attack_id
