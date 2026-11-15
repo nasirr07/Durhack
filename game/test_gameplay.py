@@ -33,6 +33,22 @@ class GameplayTests(unittest.TestCase):
 
         self.assertEqual(player.health, player.max_health - 1)
 
+    def test_holding_s_accelerates_airborne_falling(self):
+        normal = Player(100, 100)
+        fast = Player(100, 100)
+        normal.grounded = False
+        fast.grounded = False
+        normal.velocity_y = 200
+        fast.velocity_y = 200
+
+        fast_keys = dict(self.keys)
+        fast_keys[pygame.K_s] = True
+        normal.update(0.1, self.keys, 800, 600)
+        fast.update(0.1, fast_keys, 800, 600)
+
+        self.assertGreater(fast.velocity_y, normal.velocity_y)
+        self.assertGreater(fast.y, normal.y)
+
     def test_boss_collision_stays_inside_screen_boundaries(self):
         player = Player(0, 100)
         boss = Boss(20, 100)

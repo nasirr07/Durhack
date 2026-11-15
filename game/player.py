@@ -5,6 +5,8 @@ from animator import Animator
 
 
 class Player:
+    FAST_FALL_MULTIPLIER = 2.0
+
     def __init__(self, x, y, animator=None, audio=None):
 
         # Animator
@@ -235,7 +237,14 @@ class Player:
         self.x += self.velocity_x * dt
 
         # Vertical physics
-        self.velocity_y += self.gravity * dt
+        gravity = self.gravity
+        try:
+            fast_fall = keys[pygame.K_s]
+        except (IndexError, KeyError):
+            fast_fall = False
+        if fast_fall and self.velocity_y > 0:
+            gravity *= self.FAST_FALL_MULTIPLIER
+        self.velocity_y += gravity * dt
         self.y += self.velocity_y * dt
 
         # Resolve collisions
