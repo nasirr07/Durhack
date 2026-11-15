@@ -719,7 +719,7 @@ class Boss:
         self.gravity = 1300.0
 
         # Combat & melee attack state
-        self.max_health = 350
+        self.max_health = 250
         self.health = self.max_health
         self.damage_flash_timer = 0.0
         self.attack_damage = 1
