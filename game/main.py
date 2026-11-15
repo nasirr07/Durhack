@@ -42,7 +42,7 @@ player = Player(150, FLOOR_Y - 48)
 
 boss = Boss(
     SCREEN_WIDTH - 400,
-    FLOOR_Y - 300
+    FLOOR_Y - 174
 )
 
 combat = CombatSystem()
