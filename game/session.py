@@ -6,9 +6,10 @@ from player import Player
 
 
 class GameplaySession:
-    def __init__(self, screen_width, floor_y):
+    def __init__(self, screen_width, floor_y, weather=None):
         self.screen_width = screen_width
         self.floor_y = floor_y
+        self.weather = weather
         self.reset()
 
     def reset(self):
@@ -23,7 +24,7 @@ class GameplaySession:
     def handle_event(self, event):
         self.player.handle_event(event)
 
-    def update(self, dt, keys, direction="none"):
+    def update(self, dt, keys, direction="none", temperature=None):
         self.player.update(dt, keys, self.screen_width, self.floor_y)
         self.boss.update(dt, self.floor_y)
 
@@ -39,3 +40,5 @@ class GameplaySession:
 
         self.combat.update(self.player, self.boss)
         self.hazard.update(dt, direction, self.player)
+        if self.weather is not None:
+            self.weather.update(dt, temperature)
