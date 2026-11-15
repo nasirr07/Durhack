@@ -43,7 +43,15 @@ class CombatSystem:
                     knockback_direction=knockback_dir,
                 )
 
-        # 4. Check player's attack hitting the boss
+        # 4. Check boss's incantation laser beam hitting the player
+        for laser in getattr(boss, "lasers", ()):
+            if laser.check_hit(player):
+                player.take_damage(
+                    damage=getattr(laser, "damage", 1),
+                    knockback_direction=getattr(laser, "facing", -1),
+                )
+
+        # 5. Check player's attack hitting the boss
         attack_rect = player.attack_rect
         if attack_rect is None:
             return

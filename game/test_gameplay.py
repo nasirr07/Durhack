@@ -303,6 +303,31 @@ class GameplayTests(unittest.TestCase):
         combat.update(hit_player, boss)
         self.assertEqual(hit_player.health, hit_player.max_health - 1)
 
+    def test_boss_casts_incantation_laser_at_different_heights_when_not_in_fire_mode(self):
+        boss = Boss(900, 100)
+        player = Player(100, 500)  # Far out of melee range
+        combat = CombatSystem()
+
+        # Advance past laser_cooldown (1.2s) with normal temperature (22 C)
+        boss.update(1.3, 600, player=player, temperature=22.0)
+        self.assertEqual(len(boss.lasers), 1)
+        first_laser = boss.lasers[0]
+        first_height_index = boss.last_laser_height_index
+        self.assertFalse(first_laser.firing)
+
+        # Complete incantation so the straight laser fires
+        first_laser.update(first_laser.incantation_duration + 0.05)
+        self.assertTrue(first_laser.firing)
+
+        # Place player at the laser's y height and verify mask hit damages player
+        player.y = first_laser.y - player.height / 2
+        combat.update(player, boss)
+        self.assertEqual(player.health, player.max_health - 1)
+
+        # Next cast chooses a different height index
+        boss.spawn_laser_incantation(600)
+        self.assertNotEqual(boss.last_laser_height_index, first_height_index)
+
 
 if __name__ == "__main__":
     unittest.main()

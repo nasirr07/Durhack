@@ -6,23 +6,25 @@ import pygame
 _CACHED_BOSS_DATA = {}
 _CACHED_FIREBALL_SURFACE = None
 _CACHED_HEAT_WAVE_SURFACE = None
+_CACHED_INCANTATION_SURFACE = None
+_CACHED_LASER_SURFACE = None
 
-# Scale factor relative to the base 450x270 frame (990x594 total frame, 275x389 visible boss body)
-BOSS_SCALE = 2.2
+# Scale factor relative to the base 450x270 frame (1260x756 total frame, 350x495 visible boss body)
+BOSS_SCALE = 2.8
 
-FRAME_WIDTH = round(450 * BOSS_SCALE)                 # 990
-FRAME_HEIGHT = round(270 * BOSS_SCALE)                # 594
-BODY_OFFSET_X_LEFT = round(166 * BOSS_SCALE)          # 365
-BODY_OFFSET_Y = round(92 * BOSS_SCALE)                # 202
-BODY_WIDTH = round(125 * BOSS_SCALE)                  # 275
-BODY_HEIGHT = FRAME_HEIGHT - BODY_OFFSET_Y - 3        # 389
+FRAME_WIDTH = round(450 * BOSS_SCALE)                 # 1260
+FRAME_HEIGHT = round(270 * BOSS_SCALE)                # 756
+BODY_OFFSET_X_LEFT = round(166 * BOSS_SCALE)          # 465
+BODY_OFFSET_Y = round(92 * BOSS_SCALE)                # 258
+BODY_WIDTH = round(125 * BOSS_SCALE)                  # 350
+BODY_HEIGHT = FRAME_HEIGHT - BODY_OFFSET_Y - 3        # 495
 BODY_OFFSET_X_RIGHT = FRAME_WIDTH - BODY_OFFSET_X_LEFT - BODY_WIDTH
 
 # Cleaver slash region in front of the boss during row_3 active frames (9..12)
-ATTACK_OFFSET_X_LEFT = round(32 * BOSS_SCALE)         # 70
-ATTACK_OFFSET_Y = round(97 * BOSS_SCALE)              # 213
-ATTACK_WIDTH = BODY_OFFSET_X_LEFT - ATTACK_OFFSET_X_LEFT  # 295
-ATTACK_HEIGHT = FRAME_HEIGHT - ATTACK_OFFSET_Y - 3    # 378
+ATTACK_OFFSET_X_LEFT = round(32 * BOSS_SCALE)         # 90
+ATTACK_OFFSET_Y = round(97 * BOSS_SCALE)              # 272
+ATTACK_WIDTH = BODY_OFFSET_X_LEFT - ATTACK_OFFSET_X_LEFT  # 375
+ATTACK_HEIGHT = FRAME_HEIGHT - ATTACK_OFFSET_Y - 3    # 481
 ATTACK_OFFSET_X_RIGHT = FRAME_WIDTH - ATTACK_OFFSET_X_LEFT - ATTACK_WIDTH
 ACTIVE_ATTACK_FRAMES = (9, 10, 11, 12)
 
@@ -115,6 +117,202 @@ def load_heat_wave_surface():
 
     _CACHED_HEAT_WAVE_SURFACE = surf
     return surf
+
+
+def load_incantation_surface():
+    global _CACHED_INCANTATION_SURFACE
+    if _CACHED_INCANTATION_SURFACE is not None:
+        return _CACHED_INCANTATION_SURFACE
+
+    path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "assets", "boss", "incantation_circle.png")
+    )
+    if os.path.exists(path):
+        surf = pygame.image.load(path)
+        if pygame.display.get_surface() is not None:
+            surf = surf.convert_alpha()
+    else:
+        low = pygame.Surface((36, 36), pygame.SRCALPHA)
+        cx, cy = 17.5, 17.5
+        for y in range(36):
+            for x in range(36):
+                d = math.hypot(x - cx, y - cy)
+                if 15.2 <= d <= 17.2:
+                    low.set_at((x, y), (205, 65, 10, 240))
+                elif 11.2 <= d <= 12.8:
+                    low.set_at((x, y), (255, 140, 20, 250))
+                elif 4.2 <= d <= 5.8:
+                    low.set_at((x, y), (255, 205, 55, 255))
+                elif d <= 2.2:
+                    low.set_at((x, y), (255, 245, 200, 255))
+        surf = pygame.transform.scale(low, (144, 144))
+
+    _CACHED_INCANTATION_SURFACE = surf
+    return surf
+
+
+def load_laser_surface():
+    global _CACHED_LASER_SURFACE
+    if _CACHED_LASER_SURFACE is not None:
+        return _CACHED_LASER_SURFACE
+
+    path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "assets", "boss", "laser_beam.png")
+    )
+    if os.path.exists(path):
+        surf = pygame.image.load(path)
+        if pygame.display.get_surface() is not None:
+            surf = surf.convert_alpha()
+    else:
+        bl = pygame.Surface((16, 11), pygame.SRCALPHA)
+        for y in range(11):
+            for x in range(16):
+                if y in (1, 9) and x % 2 == 0:
+                    bl.set_at((x, y), (205, 65, 10, 210))
+                elif y in (2, 8):
+                    bl.set_at((x, y), (235, 95, 15, 235))
+                elif y in (3, 7):
+                    bl.set_at((x, y), (255, 150, 25, 250))
+                elif y in (4, 6):
+                    bl.set_at((x, y), (255, 205, 60, 255))
+                elif y == 5:
+                    bl.set_at((x, y), (255, 248, 215, 255))
+        surf = pygame.transform.scale(bl, (64, 44))
+
+    _CACHED_LASER_SURFACE = surf
+    return surf
+
+
+class LaserIncantation:
+    """Spawns a spinning orange pixel-art incantation circle that fires a straight laser beam at height y."""
+
+    def __init__(
+        self,
+        origin_x,
+        y,
+        facing=-1,
+        incantation_duration=1.1,
+        beam_duration=0.65,
+        beam_height=44,
+        arena_width=2400,
+        damage=1,
+    ):
+        self.origin_x = float(origin_x)
+        self.y = float(y)
+        self.facing = facing
+        self.incantation_duration = float(incantation_duration)
+        self.beam_duration = float(beam_duration)
+        self.beam_height = int(beam_height)
+        self.arena_width = int(arena_width)
+        self.damage = damage
+        self.age = 0.0
+        self.active = True
+        self.has_damaged_player = False
+
+        self.circle_base = load_incantation_surface()
+        # Keep a 36x36 low-res pixel-art copy so rotation stays chunky pixel art when scaled up
+        self.circle_lowres = pygame.transform.scale(self.circle_base, (36, 36))
+        self.circle_target_size = 152
+
+        beam_tile = load_laser_surface()
+        if beam_tile.get_height() != self.beam_height:
+            beam_tile = pygame.transform.scale(
+                beam_tile, (beam_tile.get_width(), self.beam_height)
+            )
+
+        if self.facing == -1:
+            self.beam_x = 0
+            self.beam_width = max(1, round(self.origin_x))
+        else:
+            self.beam_x = round(self.origin_x)
+            self.beam_width = max(1, self.arena_width - self.beam_x)
+
+        self.beam_surface = pygame.Surface(
+            (self.beam_width, self.beam_height), pygame.SRCALPHA
+        )
+        tile_w = beam_tile.get_width()
+        for tx in range(0, self.beam_width, tile_w):
+            self.beam_surface.blit(beam_tile, (tx, 0))
+        self.beam_mask = pygame.mask.from_surface(self.beam_surface)
+
+    @property
+    def firing(self):
+        return (
+            self.active
+            and self.incantation_duration
+            <= self.age
+            < (self.incantation_duration + self.beam_duration)
+        )
+
+    @property
+    def beam_rect(self):
+        if not self.firing:
+            return None
+        return pygame.Rect(
+            self.beam_x,
+            round(self.y - self.beam_height / 2),
+            self.beam_width,
+            self.beam_height,
+        )
+
+    def update(self, dt):
+        if not self.active:
+            return
+        self.age += dt
+        if self.age >= self.incantation_duration + self.beam_duration:
+            self.active = False
+
+    def check_hit(self, player):
+        if not self.firing or self.has_damaged_player:
+            return False
+
+        b_rect = self.beam_rect
+        if b_rect is None or not b_rect.colliderect(player.rect):
+            return False
+
+        p_mask = getattr(player, "body_mask", None)
+        if p_mask is None:
+            p_mask = pygame.mask.Mask(player.rect.size, fill=True)
+
+        offset = (player.rect.x - b_rect.x, player.rect.y - b_rect.y)
+        if self.beam_mask.overlap(p_mask, offset) is not None:
+            self.has_damaged_player = True
+            return True
+        return False
+
+    def draw(self, screen):
+        if not self.active:
+            return
+
+        # 1. Draw pixel-art orange telegraph line during incantation or full laser beam once incantation completes
+        if not self.firing:
+            progress = min(1.0, max(0.0, self.age / max(0.01, self.incantation_duration)))
+            line_alpha = round(170 * progress)
+            telegraph = pygame.Surface((self.beam_width, 8), pygame.SRCALPHA)
+            for dx in range(0, self.beam_width, 16):
+                pygame.draw.rect(telegraph, (255, 145, 25, line_alpha), (dx, 0, 10, 8))
+                pygame.draw.rect(telegraph, (255, 230, 120, line_alpha), (dx, 2, 10, 4))
+            screen.blit(telegraph, (self.beam_x, round(self.y - 4)))
+        else:
+            beam_age = self.age - self.incantation_duration
+            remain_ratio = 1.0 - (beam_age / max(0.01, self.beam_duration))
+            beam_copy = self.beam_surface.copy()
+            beam_copy.set_alpha(min(255, max(0, round(255 * min(1.0, remain_ratio * 2.5)))))
+            screen.blit(beam_copy, self.beam_rect)
+
+        # 2. Draw rotating, fading-in orange pixel-art incantation circle at origin (rotated at low-res then scaled 4x)
+        inc_progress = min(1.0, max(0.0, self.age / max(0.01, self.incantation_duration * 0.6)))
+        scale = 0.35 + 0.65 * inc_progress
+        # Step rotation angle to 15-degree increments for authentic pixel-art animation feel
+        stepped_angle = round((self.age * 150.0) / 15.0) * 15.0
+        rotated_low = pygame.transform.rotate(self.circle_lowres, stepped_angle)
+        pixel_scale = (self.circle_target_size / 36.0) * scale
+        scaled_w = max(8, round(rotated_low.get_width() * pixel_scale))
+        scaled_h = max(8, round(rotated_low.get_height() * pixel_scale))
+        pixel_circle = pygame.transform.scale(rotated_low, (scaled_w, scaled_h))
+        pixel_circle.set_alpha(round(255 * inc_progress))
+        circle_rect = pixel_circle.get_rect(center=(round(self.origin_x), round(self.y)))
+        screen.blit(pixel_circle, circle_rect)
 
 
 class HeatWave:
@@ -529,7 +727,7 @@ class Boss:
         self.gravity = 1300.0
 
         # Combat & melee attack state
-        self.max_health = 200
+        self.max_health = 350
         self.health = self.max_health
         self.damage_flash_timer = 0.0
         self.attack_damage = 1
@@ -538,7 +736,6 @@ class Boss:
         self.attack_cooldown_duration = 2.0
         self.attack_id = 0
         self.last_hit_attack_id = -1
-        self.attack_hit = False
         self.attack_hit = False
 
         # Ranged fireball (temperature > 26 C) & sky-drop heat wave state
@@ -555,6 +752,12 @@ class Boss:
         self.heat_wave_gap_width = 170
         self.heat_wave_cooldown = 2.0
         self.heat_wave_cooldown_duration = 4.5
+
+        # Incantation + straight horizontal laser state (when not in fire mode & player out of melee range)
+        self.lasers = []
+        self.laser_cooldown = 1.2
+        self.laser_cooldown_duration = 3.0
+        self.last_laser_height_index = -1
 
         self.colour = (180, 70, 70)
 
@@ -706,6 +909,36 @@ class Boss:
         self.heat_wave_cooldown = self.heat_wave_cooldown_duration
         return hw
 
+    def spawn_laser_incantation(self, floor_y, y=None):
+        """Spawn an incantation circle that fires a straight horizontal laser at a different height each time."""
+        if self.health <= 0:
+            return None
+
+        # Distinct vertical heights above the floor (low ground jump, mid-low, mid-high, high aerial)
+        height_offsets = [32, 92, 152, 215]
+        available_indices = [
+            idx for idx in range(len(height_offsets)) if idx != self.last_laser_height_index
+        ]
+        chosen_index = random.choice(available_indices)
+        self.last_laser_height_index = chosen_index
+
+        if y is None:
+            jitter = random.randint(-10, 10)
+            laser_y = floor_y - height_offsets[chosen_index] + jitter
+        else:
+            laser_y = float(y)
+
+        origin_x = self.rect.left - 30 if self.facing == -1 else self.rect.right + 30
+        laser = LaserIncantation(
+            origin_x=origin_x,
+            y=laser_y,
+            facing=self.facing,
+            damage=self.attack_damage,
+        )
+        self.lasers.append(laser)
+        self.laser_cooldown = self.laser_cooldown_duration
+        return laser
+
     def check_attack_hit(self, player):
         """Check whether the boss's active attack mask overlaps the player's mask."""
         if not self.is_attack_active or self.attack_id == self.last_hit_attack_id:
@@ -785,6 +1018,10 @@ class Boss:
             hw.update(dt, floor_y)
         self.heat_waves = [hw for hw in self.heat_waves if hw.active]
 
+        for laser in self.lasers:
+            laser.update(dt)
+        self.lasers = [ls for ls in self.lasers if ls.active]
+
         # Apply vertical gravity
         self.velocity_y += self.gravity * dt
         self.y += self.velocity_y * dt
@@ -815,18 +1052,28 @@ class Boss:
                     else:
                         self.shoot_fireball()
 
-        # Stationary boss melee AI: never moves horizontally, cleaves when player is in range
+        # Stationary boss melee & normal-temperature ranged laser AI
         if player is not None:
-            if self.current_animation not in ("row_3", "row_4"):
-                if self.facing == -1:
-                    horizontal_gap = self.rect.left - player.rect.right
-                else:
-                    horizontal_gap = player.rect.left - self.rect.right
+            if self.facing == -1:
+                horizontal_gap = self.rect.left - player.rect.right
+            else:
+                horizontal_gap = player.rect.left - self.rect.right
 
+            if self.current_animation not in ("row_3", "row_4"):
                 if horizontal_gap <= self.attack_range and self.attack_cooldown <= 0:
                     self.start_attack()
                 else:
                     self.set_animation("row_1")
+
+            # When NOT in fire mode (temp <= 26) and player is outside melee range, cast incantation laser
+            if (
+                not _is_over_fireball_temp(temperature)
+                and horizontal_gap > self.attack_range
+                and not self.lasers
+            ):
+                self.laser_cooldown = max(0.0, self.laser_cooldown - dt)
+                if self.laser_cooldown <= 0:
+                    self.spawn_laser_incantation(floor_y)
 
         self.animate(dt)
 
@@ -839,6 +1086,7 @@ class Boss:
             self.set_animation("row_5")
             self.fireballs.clear()
             self.heat_waves.clear()
+            self.lasers.clear()
 
     def draw(self, screen):
         frame = self.image
@@ -850,6 +1098,9 @@ class Boss:
 
         for hw in self.heat_waves:
             hw.draw(screen)
+
+        for laser in self.lasers:
+            laser.draw(screen)
 
         for fireball in self.fireballs:
             fireball.draw(screen)

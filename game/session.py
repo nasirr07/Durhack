@@ -16,8 +16,8 @@ class GameplaySession:
     def reset(self):
         self.player = Player(150, self.floor_y - 48, audio=self.audio)
         self.boss = Boss(
-            self.screen_width - 330,
-            self.floor_y - 389,
+            self.screen_width - 390,
+            self.floor_y - 495,
             audio=self.audio,
         )
         self.combat = CombatSystem()
