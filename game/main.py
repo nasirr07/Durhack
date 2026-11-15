@@ -426,6 +426,8 @@ from screen_flow import ScreenController, ScreenState
 from session import GameplaySession
 from spritesheet import SpriteSheet
 from ui import PALETTE, PixelUI
+from audio import GameAudio
+from lighting import DarknessSystem
 from weather import WeatherSystem
 
 
@@ -490,7 +492,15 @@ def draw_health(screen, player, font):
         screen.blit(heart, (24 + index * 34, 64))
 
 
-def draw_gameplay(screen, session, background_surface, floor_surface, font, serial_data):
+def draw_gameplay(
+    screen,
+    session,
+    background_surface,
+    floor_surface,
+    font,
+    serial_data,
+    lighting=None,
+):
     shake_x, shake_y = session.hazard.shake_offset
     screen.blit(background_surface, (shake_x, shake_y))
     screen.blit(
@@ -504,6 +514,19 @@ def draw_gameplay(screen, session, background_surface, floor_surface, font, seri
     session.boss.draw(world)
     session.hazard.draw(world)
     screen.blit(world, (shake_x, shake_y))
+    if lighting is not None:
+        lighting.apply(
+            screen,
+            (
+                session.player.rect.centerx + shake_x,
+                session.player.rect.centery + shake_y,
+            ),
+            draw_entities=lambda surface: (
+                session.boss.draw(surface),
+                session.hazard.draw(surface),
+            ),
+            entity_offset=(shake_x, shake_y),
+        )
     draw_health(screen, session.player, font)
 
     instructions = font.render(
@@ -523,27 +546,15 @@ def draw_gameplay(screen, session, background_surface, floor_surface, font, seri
 
 def main():
     pygame.init()
-    pygame.mixer.init()
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption("MicroRogue")
     clock = pygame.time.Clock()
-
-        # Load background soundtrack
-    pygame.mixer.music.load("assets/sound/soundtrack.wav")
-
-    # Set background volume (0.0 to 1.0)
-    pygame.mixer.music.set_volume(0.1)
-
-    # Start playing, looping forever, with a 3-second fade-in
-    pygame.mixer.music.play(
-        loops=-1,
-        fade_ms=3000
-)
-
-    wind_sound = pygame.mixer.Sound("assets/Weather/wind_sound.wav")
-    wind_sound.set_volume(0.5)
-    print("Wind sound loaded successfully!")
-    print("Duration:", wind_sound.get_length())
+    audio = GameAudio()
+    wind_sound = audio.load_sound(
+        "wind",
+        os.path.join(ASSETS_DIR, "Weather", "wind_sound.wav"),
+        volume=0.5,
+    )
     
     width, height = screen.get_size()
     floor_height = 140
@@ -558,6 +569,7 @@ def main():
         weather_assets.get("PixelatedSun"),
         wind_sound=wind_sound
     )
+    lighting = DarknessSystem(screen.get_size())
 
     ui = PixelUI((width, height), ASSETS_DIR)
     hud_font = pygame.font.Font(
@@ -566,7 +578,7 @@ def main():
     )
     serial_reader = SerialReader()
     serial_reader.Start()
-    session = GameplaySession(width, floor_y, weather)
+    session = GameplaySession(width, floor_y, weather, audio=audio)
     controller = ScreenController()
     running = True
 
@@ -589,6 +601,7 @@ def main():
                     continue
                 action = controller.handle_event(event)
                 if action == "start":
+                    audio.start_gameplay_music()
                     controller.state = ScreenState.GAMEPLAY
                 elif action == "quit":
                     running = False
@@ -611,6 +624,7 @@ def main():
                     serial_data["dir"],
                     serial_data.get("temp"),
                 )
+                lighting.update(dt, serial_data.get("light"))
                 draw_gameplay(
                     screen,
                     session,
@@ -618,8 +632,10 @@ def main():
                     floor_surface,
                     hud_font,
                     serial_data,
+                    lighting,
                 )
                 if session.player.health <= 0 or session.boss.health <= 0:
+                    audio.stop_gameplay_music()
                     controller.show_end_screen(session.boss.health <= 0)
 
         elif controller.state == ScreenState.END:
@@ -639,23 +655,20 @@ def main():
                 action = controller.handle_event(event)
                 if action == "restart":
                     session.reset()
+                    audio.start_gameplay_music()
                     controller.state = ScreenState.GAMEPLAY
                 elif action == "menu":
+                    audio.stop_gameplay_music()
                     session.reset()
                     controller.show_start_screen()
 
         pygame.display.flip()
 
-    # Fade out music over 3 seconds
-    pygame.mixer.music.fadeout(3000)
-
-    # Wait for the fade to finish
-    pygame.time.wait(3000)
+    audio.stop_gameplay_music()
 
     pygame.quit()
 
     serial_reader.Stop()
-    pygame.quit()
     sys.exit()
 
 

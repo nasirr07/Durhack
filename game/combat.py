@@ -19,4 +19,5 @@ class CombatSystem:
         # Check collision and apply damage
         if check_collision(attack_rect, boss.rect):
             boss.take_damage(player.attack_damage)
+            player.attack_hit = True
             self.last_hit_attack_id = player.attack_id

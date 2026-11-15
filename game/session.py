@@ -6,14 +6,15 @@ from player import Player
 
 
 class GameplaySession:
-    def __init__(self, screen_width, floor_y, weather=None):
+    def __init__(self, screen_width, floor_y, weather=None, audio=None):
         self.screen_width = screen_width
         self.floor_y = floor_y
         self.weather = weather
+        self.audio = audio
         self.reset()
 
     def reset(self):
-        self.player = Player(150, self.floor_y - 48)
+        self.player = Player(150, self.floor_y - 48, audio=self.audio)
         self.boss = Boss(
             self.screen_width - 400,
             self.floor_y - 300,
