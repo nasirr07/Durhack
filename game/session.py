@@ -1,6 +1,7 @@
 from boss import Boss
 from collision import resolve_player_boss_collision
 from combat import CombatSystem
+from hazards import EarthquakeHazard
 from player import Player
 
 
@@ -17,11 +18,12 @@ class GameplaySession:
             self.floor_y - 300,
         )
         self.combat = CombatSystem()
+        self.hazard = EarthquakeHazard(self.screen_width, self.floor_y)
 
     def handle_event(self, event):
         self.player.handle_event(event)
 
-    def update(self, dt, keys):
+    def update(self, dt, keys, direction="none"):
         self.player.update(dt, keys, self.screen_width, self.floor_y)
         self.boss.update(dt, self.floor_y)
 
@@ -36,3 +38,4 @@ class GameplaySession:
             )
 
         self.combat.update(self.player, self.boss)
+        self.hazard.update(dt, direction, self.player)

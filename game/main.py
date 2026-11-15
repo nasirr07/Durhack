@@ -490,10 +490,17 @@ def draw_health(screen, player, font):
 
 
 def draw_gameplay(screen, session, background_surface, floor_surface, font, serial_data):
-    screen.blit(background_surface, (0, 0))
-    screen.blit(floor_surface, (0, screen.get_height() - floor_surface.get_height()))
-    session.player.draw(screen)
-    session.boss.draw(screen)
+    shake_x, shake_y = session.hazard.shake_offset
+    screen.blit(background_surface, (shake_x, shake_y))
+    screen.blit(
+        floor_surface,
+        (shake_x, screen.get_height() - floor_surface.get_height() + shake_y),
+    )
+    world = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    session.player.draw(world)
+    session.boss.draw(world)
+    session.hazard.draw(world)
+    screen.blit(world, (shake_x, shake_y))
     draw_health(screen, session.player, font)
 
     instructions = font.render(
@@ -568,14 +575,15 @@ def main():
                     session.handle_event(event)
 
             if running:
-                session.update(dt, keys)
+                serial_data = serial_reader.GetSerialData()
+                session.update(dt, keys, serial_data["dir"])
                 draw_gameplay(
                     screen,
                     session,
                     background_surface,
                     floor_surface,
                     hud_font,
-                    serial_reader.GetSerialData(),
+                    serial_data,
                 )
                 if session.player.health <= 0 or session.boss.health <= 0:
                     controller.show_end_screen(session.boss.health <= 0)
