@@ -1,8 +1,8 @@
 # SPECS FOR THE DURHACK PROJECT
 
  - Get data from microbit DONE
-- data reader
-- Make receiver
+- data reader DONE
+- Make receiver DONE
 
 - Game environment
 - Player control
