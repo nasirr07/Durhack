@@ -1,46 +1,139 @@
-A 2D roguelite boss-fighting game where the physical environment influences the virtual world.
+# MicroVania
 
-Overview
+**A pixel-art boss battle where the real world influences the game.**
 
-MicroRogue is a Python/Pygame 2D roguelite in which the player faces a boss inside a dynamic arena. Unlike a traditional boss fight, the game world responds to real-world environmental conditions measured by two BBC micro:bits.
+Micro Rouge is a Python/Pygame boss-fighting game developed for DurHack. It combines fast-paced platforming and combat with physical computing, using BBC micro:bits to bring real-world environmental data into the game.
 
-Temperature, ambient light and physical movement influence the boss's abilities, live AI dialogue, and the arena itself, creating an unpredictable experience where the player's surroundings become part of the challenge.
+Temperature, ambient light and physical movement influence the arena, turning the player's surroundings into part of the gameplay.
 
-The environment is the enemy.
+## Features
 
-Core Gameplay
+### ⚔️ Boss combat
+- Fight a boss with distinct attack patterns and animations.
+- Dodge attacks using movement, jumping, double jumping and dashing.
+- Deal damage through close-range attacks.
+- Manage health, damage immunity and knockback.
+- Face increasingly challenging encounters as environmental conditions change.
 
-The player must survive and defeat a boss whose behaviour, attacks, and surrounding arena change in response to live sensor data:
+### 🌍 A world influenced by the real one
+Two BBC micro:bits work together to collect and transmit environmental data to the game.
 
-- Temperature (High temperature >= 26°C): Boss enters fire mode, launching 5-fireball volleys and summoning scorching heatwaves across the arena.
-- Temperature (Normal temperature): Boss casts orange incantation circles and fires timed laser beams when the player is at range.
-- Light (Low ambient light): Visibility dynamically decreases with the micro:bit light sensor, restricting how much of the arena the player can see.
-- Tilt (Physical movement or orientation changes): Triggers earthquakes, screen rumbling, environmental disruption, and reactive boss taunts.
-- Live AI Boss Taunts (Gemini API): A Pokémon-style dialogue system at the bottom of the screen generates real-time, context-aware boss taunts reacting to temperature, darkness, earthquakes, and player health.
+| Sensor | In-game effect |
+|---|---|
+| Temperature | Changes the arena's weather and atmosphere. |
+| Ambient light | Controls visibility, creating darker environments when light levels are low. |
+| Accelerometer | Detects alternating tilts to trigger earthquake hazards. |
 
-Hardware Architecture
+The sensor micro:bit collects environmental information and transmits it wirelessly to a receiver micro:bit. The receiver communicates with the computer over USB serial.
 
-The project uses two BBC micro:bits to collect and transmit environmental data:
+### 🎮 Pixel-art presentation
+- Custom pixel-art visuals and animated sprites.
+- Animated player and boss attacks.
+- Custom interface, menus and gameplay transitions.
+- Environmental visual effects integrated into the arena.
 
-- Sensor micro:bit: Measures temperature, ambient light and tilt using its onboard sensors and broadcasts JSON packets over radio.
-- Receiver micro:bit: Receives the sensor readings wirelessly from the first micro:bit and streams them to the laptop over USB serial.
-- Game application: A multi-threaded Python/Pygame application reads the incoming serial data without blocking the 60 FPS game loop and translates it into live gameplay changes.
+### 🤖 Dynamic boss dialogue
+The project also integrates Gemini-powered boss dialogue, giving encounters more personality through dynamically generated taunts and dialogue.
 
-Technology Stack
+## Tech Stack
 
-- Python – Core game logic, threaded serial reader, and application architecture.
-- Pygame – 2D rendering, sprite sheet animation engine, lighting overlays, audio, and combat physics.
-- Google Gemini API – Real-time contextual boss dialogue and environmental taunts.
-- BBC micro:bit & MicroPython – Environmental sensing and wireless radio telemetry.
-- Serial communication (pyserial) – Low-latency sensor streaming from the receiver micro:bit to the laptop.
-- Git & GitHub – Version control and collaboration.
-- Entire – Captures AI-assisted development sessions, prompts, and checkpoints.
+- **Python** – Core game logic.
+- **Pygame** – Rendering, input, animation and gameplay.
+- **BBC micro:bit** – Environmental sensing and physical input.
+- **Serial communication** – Transfers sensor readings to the game.
+- **Gemini API** – Dynamic boss dialogue.
+- **Git & GitHub** – Version control and collaboration.
 
-Key Features
+## Getting Started
 
-- 2D roguelite boss encounter with custom SpriteSheet and Animator system.
-- Real-world temperature switches boss between laser incantations and fireball/heatwave attacks.
-- Ambient light dynamically scales arena darkness and visibility.
-- Physical tilt triggers earthquakes, screen shake, and reactive dialogue.
-- Live Gemini AI boss taunts presented in a retro Pokémon-style dialogue box with audio blips.
-- Wireless radio communication between two BBC micro:bits.
+### Prerequisites
+
+- Python 3.11 or later.
+- Git.
+- A Windows, macOS or Linux environment capable of running Pygame.
+
+The game can be run without the micro:bit hardware if the project is configured to use its simulated/default sensor values.
+
+### Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/nasirr07/Durhack.git
+   cd Durhack
+   ```
+
+2. Create a virtual environment:
+
+   **Windows PowerShell**
+   ```powershell
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+   **macOS / Linux**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   python -m pip install -r requirements.txt
+   ```
+
+4. Launch the game from the project root:
+
+   ```bash
+   python -m game.main
+   ```
+
+## Hardware Setup
+
+To use the physical sensor integration:
+
+1. Flash the sensor micro:bit with the environmental data collection program.
+2. Flash the receiver micro:bit with the wireless reception program.
+3. Connect the receiver micro:bit to your computer over USB.
+4. Ensure the game can access the receiver's serial port.
+5. Launch the game.
+
+When connected correctly, the game uses incoming sensor readings to influence the environment and trigger gameplay events.
+
+## Controls
+
+| Action | Input |
+|---|---|
+| Move | Movement keys |
+| Jump / Double jump | Jump key |
+| Dash | Left Shift |
+| Attack | J |
+
+*Check the in-game instructions for the current control layout.*
+
+## Project Structure
+
+```text
+Durhack/
+├── game/              # Core gameplay and game systems
+├── assets/            # Sprites, backgrounds and audio
+├── microbit_code/     # micro:bit programs and serial communication
+├── tests/             # Automated tests
+├── requirements.txt   # Python dependencies
+└── README.md
+```
+
+## Development
+
+Micro Rouge was built collaboratively during DurHack, with an emphasis on modular game architecture and integrating software with physical hardware.
+
+The project uses Git for version control and Entire to capture AI-assisted development sessions and checkpoints.
+
+## Team
+
+Developed at **DurHack**.
+
+---
+
+*The world outside the screen doesn't have to stay outside the game.*
