@@ -1,13 +1,15 @@
-# SPECS FOR THE DURHACK PROJECT
+# MicroRogue project notes
 
- - Get data from microbit DONE
-- data reader DONE
-- Make receiver DONE
+This file is retained as a historical record of the original DurHack checklist. It is not the source of truth for the current architecture or setup instructions; see `README.md` and `CONTRIBUTING.md`.
 
-- Game environment DONE
-- Player control DONE
-- Dynamic enemy ai using microbit data DONE
-- Dynamic environment from microbit data DONE
-- Home screen DONE
-- Score DONE
- - Game music DONE
+## Original milestones
+
+- Receive data from a micro:bit
+- Implement the serial data reader
+- Build the receiver
+- Create the game environment
+- Add player control
+- Connect enemy behavior to micro:bit data
+- Connect the environment to micro:bit data
+- Add the home screen
+- Add score and game music
