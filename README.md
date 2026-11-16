@@ -2,6 +2,29 @@
 
 MicroRogue is a Python/Pygame boss-fighting game where temperature, ambient light, and physical movement shape the virtual arena. It combines a playable 2D combat loop with a two-micro:bit sensor pipeline.
 
+## The Idea: Everyone Can Play a Part
+
+Built during **DurHack**, MicroVania was inspired by a simple question: what if someone could influence a video game without actually playing it?
+
+Traditional games place almost all control in the hands of the person holding the controller. We wanted to challenge that idea by making the game an experience that people could share, regardless of their gaming ability.
+
+A sibling, parent or friend who has never played a video game should still be able to influence what happens on screen. They don't need to learn complicated controls, hold a controller or even touch the keyboard. Through BBC micro:bits, their surroundings and physical actions can become part of the gameplay.
+
+Temperature influences the weather, ambient light changes visibility, and physical movement can trigger environmental hazards. This creates an experience where the player and the people around them can shape the same game in different ways.
+
+**You don't need to be a gamer to be part of the game.**
+
+### The Team
+
+Developed collaboratively at **DurHack 2026** by:
+
+| Team member | GitHub |
+|---|---|
+| Nasir Radi | [@Nasir](https://github.com/nasirr07) |
+| Isaac Nai | [@Isaac](https://github.com/Isaac-Nai) |
+| Bartosh | [@Bartosh](https://github.com/BartoszP07) |
+| Vincent | [@Vincent](https://github.com/Ruketa-code) |
+
 > **The environment is the enemy.**
 
 ## Why this project is interesting
