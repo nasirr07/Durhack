@@ -276,19 +276,19 @@ class GameplayTests(unittest.TestCase):
         player = Player(100, 250)
         combat = CombatSystem()
 
-        # At 26 C or below, neither fireballs nor heat waves are spawned
-        boss.update(2.5, 600, player=player, temperature=26.0)
+        # Below 26 C (e.g. 25 C), neither fireballs nor heat waves are spawned
+        boss.update(2.5, 600, player=player, temperature=25.0)
         self.assertEqual(len(boss.fireballs), 0)
         self.assertEqual(len(boss.heat_waves), 0)
 
-        # Above 26 C, boss summons a volley of 5 fireballs at once that fade in and linger first
-        boss.update(0.85, 600, player=player, temperature=27.0)
+        # At 26 C minimum, boss summons a volley of 5 fireballs at once that fade in and linger first
+        boss.update(0.85, 600, player=player, temperature=26.0)
         self.assertEqual(len(boss.fireballs), 5)
         self.assertTrue(all(not fb.launched for fb in boss.fireballs))
         self.assertLess(boss.fireballs[0].alpha, 255)
 
         # After 0.8s, only the first fireball (launch_delay=0.75s) has launched sequentially
-        boss.update(0.8, 600, player=player, temperature=27.0)
+        boss.update(0.8, 600, player=player, temperature=26.0)
         launched_states = [fb.launched for fb in boss.fireballs]
         self.assertEqual(launched_states, [True, False, False, False, False])
 

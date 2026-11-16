@@ -36,7 +36,7 @@ def _is_over_fireball_temp(temperature):
         value = float(temperature)
     except (TypeError, ValueError):
         return False
-    return math.isfinite(value) and value > FIREBALL_TEMP_THRESHOLD
+    return math.isfinite(value) and value >= FIREBALL_TEMP_THRESHOLD
 
 
 def load_fireball_surface():

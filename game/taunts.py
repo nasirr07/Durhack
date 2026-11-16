@@ -370,7 +370,7 @@ class BossTauntBox:
 
         is_hot = False
         try:
-            is_hot = float(temp) > 26.0
+            is_hot = float(temp) >= 26.0
         except (TypeError, ValueError):
             pass
 
