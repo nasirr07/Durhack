@@ -3,3 +3,14 @@
 .env
 __pycache__/
 venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.py[cod]
+*.coverage
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+.DS_Store
+Thumbs.db
